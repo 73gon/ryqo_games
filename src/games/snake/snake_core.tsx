@@ -460,7 +460,10 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
           // Top Left
           // Round if (Left AND Up) OR (!Left AND !Up)
           // Don't round if (Left XOR Up)
-          if ((neighbors.left && neighbors.up) || (!neighbors.left && !neighbors.up)) {
+          if (
+            (neighbors.left && neighbors.up) ||
+            (!neighbors.left && !neighbors.up)
+          ) {
             g.moveTo(x, y + r)
             g.arcTo(x, y, x + r, y, r)
           } else {
@@ -468,7 +471,10 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
           }
 
           // Top Right
-          if ((neighbors.right && neighbors.up) || (!neighbors.right && !neighbors.up)) {
+          if (
+            (neighbors.right && neighbors.up) ||
+            (!neighbors.right && !neighbors.up)
+          ) {
             g.lineTo(x + w - r, y)
             g.arcTo(x + w, y, x + w, y + r, r)
           } else {
@@ -476,7 +482,10 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
           }
 
           // Bottom Right
-          if ((neighbors.right && neighbors.down) || (!neighbors.right && !neighbors.down)) {
+          if (
+            (neighbors.right && neighbors.down) ||
+            (!neighbors.right && !neighbors.down)
+          ) {
             g.lineTo(x + w, y + h - r)
             g.arcTo(x + w, y + h, x + w - r, y + h, r)
           } else {
@@ -484,7 +493,10 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
           }
 
           // Bottom Left
-          if ((neighbors.left && neighbors.down) || (!neighbors.left && !neighbors.down)) {
+          if (
+            (neighbors.left && neighbors.down) ||
+            (!neighbors.left && !neighbors.down)
+          ) {
             g.lineTo(x + r, y + h)
             g.arcTo(x, y + h, x, y + h - r, r)
           } else {
