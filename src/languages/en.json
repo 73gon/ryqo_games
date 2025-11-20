@@ -51,6 +51,13 @@
         "reveal": "Left click to reveal, Right click to flag",
         "tiles": "Use Arrow Keys to move tiles"
       }
+    },
+    "snake": {
+      "leaderboard": "Leaderboard",
+      "clear": "Clear",
+      "restartHint": "Press Space or click Play to restart",
+      "apples": "Apples",
+      "speed": "Speed"
     }
   },
   "kbd": {

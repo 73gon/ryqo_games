@@ -51,6 +51,16 @@
         "reveal": "Linksklick zum Aufdecken, Rechtsklick zum Markieren",
         "tiles": "Pfeiltasten zum Bewegen der Kacheln nutzen"
       }
+    },
+    "snake": {
+      "leaderboard": "Bestenliste",
+      "clear": "Löschen",
+      "restartHint": "Leertaste oder Play drücken zum Neustarten",
+      "apples": "Äpfel",
+      "speed": "Geschwindigkeit"
     }
+  },
+  "kbd": {
+    "space": "Leertaste"
   }
 }

@@ -173,6 +173,19 @@
   --sidebar-accent-foreground: var(--black);
   --sidebar-border: var(--neutral-200);
   --sidebar-ring: var(--neutral-400);
+
+  /* Game specific colors */
+  --game-bg: var(--neutral-400);
+  --game-grid: var(--neutral-500);
+  --game-border: var(--neutral-500);
+
+  /* Medal colors */
+  --medal-gold: #ffd700;
+  --medal-gold-bg: rgba(255, 215, 0, 0.1);
+  --medal-silver: #999999;
+  --medal-silver-bg: rgba(153, 153, 153, 0.1);
+  --medal-bronze: #cd7f32;
+  --medal-bronze-bg: rgba(205, 127, 50, 0.1);
 }
 
 .dark {
@@ -208,6 +221,19 @@
   --sidebar-accent-foreground: var(--white);
   --sidebar-border: var(--neutral-800);
   --sidebar-ring: var(--neutral-500);
+
+  /* Game specific colors */
+  --game-bg: var(--neutral-800);
+  --game-grid: var(--neutral-900);
+  --game-border: var(--neutral-900);
+
+  /* Medal colors */
+  --medal-gold: #ffed4e;
+  --medal-gold-bg: rgba(255, 237, 78, 0.1);
+  --medal-silver: #c0c0c0;
+  --medal-silver-bg: rgba(192, 192, 192, 0.1);
+  --medal-bronze: #e59866;
+  --medal-bronze-bg: rgba(229, 152, 102, 0.1);
 }
 
 @layer base {

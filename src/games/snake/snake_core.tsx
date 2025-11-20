@@ -1,9 +1,14 @@
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
 import { Application, Graphics } from 'pixi.js'
 import { useGameSound } from '@/hooks/useGameSound'
+import { drawPixelApple } from './pixel_apple'
+import { drawPixelSnakeHead } from './pixel_snake_head'
+import { drawPixelSnakeHeadDead } from './pixel_snake_head_dead'
+import { drawPixelSnakeBody } from './pixel_snake_body'
+import { drawPixelSnakeTail } from './pixel_snake_tail'
 
-const CELL_SIZE = 30
-const GRID_SIZE = 20 // 20x20 grid = 600x600 pixels
+const CELL_SIZE = 31
+const GRID_SIZE = 20
 
 type Point = { x: number; y: number }
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
@@ -19,12 +24,20 @@ type SnakeCoreProps = {
   speedLevel: number
   onScoreChange: (score: number) => void
   onGameOver: () => void
+  onGameRestart: () => void
   onStateChange: (isPlaying: boolean) => void
 }
 
 export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
   (
-    { appleCount, speedLevel, onScoreChange, onGameOver, onStateChange },
+    {
+      appleCount,
+      speedLevel,
+      onScoreChange,
+      onGameOver,
+      onGameRestart,
+      onStateChange,
+    },
     ref,
   ) => {
     const containerRef = useRef<HTMLDivElement>(null)
@@ -50,49 +63,54 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
     ])
     const foodsRef = useRef<Point[]>([])
     const directionRef = useRef<Direction>('RIGHT')
-    const nextDirectionRef = useRef<Direction>('RIGHT')
+    const directionQueueRef = useRef<Direction[]>([])
     const timeSinceLastMoveRef = useRef<number>(0)
     const speedRef = useRef(100) // ms per move
     const isPlayingRef = useRef(false)
     const gameOverRef = useRef(false)
 
     // Expose controls to parent
-    useImperativeHandle(ref, () => ({
-      startGame: () => {
-        snakeRef.current = [
-          { x: 10, y: 10 },
-          { x: 9, y: 10 },
-          { x: 8, y: 10 },
-        ]
-        prevSnakeRef.current = [
-          { x: 10, y: 10 },
-          { x: 9, y: 10 },
-          { x: 8, y: 10 },
-        ]
-        directionRef.current = 'RIGHT'
-        nextDirectionRef.current = 'RIGHT'
+    useImperativeHandle(
+      ref,
+      () => ({
+        startGame: () => {
+          snakeRef.current = [
+            { x: 10, y: 10 },
+            { x: 9, y: 10 },
+            { x: 8, y: 10 },
+          ]
+          prevSnakeRef.current = [
+            { x: 10, y: 10 },
+            { x: 9, y: 10 },
+            { x: 8, y: 10 },
+          ]
+          directionRef.current = 'RIGHT'
+          directionQueueRef.current = []
 
-        foodsRef.current = []
-        for (let i = 0; i < appleCount; i++) {
-          spawnFood(snakeRef.current)
-        }
+          foodsRef.current = []
+          for (let i = 0; i < appleCount; i++) {
+            spawnFood(snakeRef.current)
+          }
 
-        onScoreChange(0)
-        gameOverRef.current = false
-        isPlayingRef.current = true
-        onStateChange(true)
-        window.focus()
-      },
-      stopGame: () => {
-        isPlayingRef.current = false
-        onStateChange(false)
-      },
-      resumeGame: () => {
-        isPlayingRef.current = true
-        onStateChange(true)
-        window.focus()
-      },
-    }))
+          scoreRef.current = 0
+          onScoreChange(0)
+          gameOverRef.current = false
+          isPlayingRef.current = true
+          onStateChange(true)
+          window.focus()
+        },
+        stopGame: () => {
+          isPlayingRef.current = false
+          onStateChange(false)
+        },
+        resumeGame: () => {
+          isPlayingRef.current = true
+          onStateChange(true)
+          window.focus()
+        },
+      }),
+      [appleCount, onScoreChange, onStateChange],
+    )
 
     // Speed update effect
     useEffect(() => {
@@ -230,18 +248,16 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
 
         switch (e.key) {
           case 'ArrowUp':
-            if (directionRef.current !== 'DOWN') nextDirectionRef.current = 'UP'
+            addDirectionToQueue('UP')
             break
           case 'ArrowDown':
-            if (directionRef.current !== 'UP') nextDirectionRef.current = 'DOWN'
+            addDirectionToQueue('DOWN')
             break
           case 'ArrowLeft':
-            if (directionRef.current !== 'RIGHT')
-              nextDirectionRef.current = 'LEFT'
+            addDirectionToQueue('LEFT')
             break
           case 'ArrowRight':
-            if (directionRef.current !== 'LEFT')
-              nextDirectionRef.current = 'RIGHT'
+            addDirectionToQueue('RIGHT')
             break
         }
       }
@@ -249,6 +265,27 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
       window.addEventListener('keydown', handleKeyDown)
       return () => window.removeEventListener('keydown', handleKeyDown)
     }, [appleCount]) // Re-bind if props change? No, refs are stable.
+
+    const addDirectionToQueue = (newDirection: Direction) => {
+      // Get the last direction in the queue, or current direction if queue is empty
+      const lastDirection =
+        directionQueueRef.current.length > 0
+          ? directionQueueRef.current[directionQueueRef.current.length - 1]
+          : directionRef.current
+
+      // Prevent opposite direction and duplicate
+      const isOpposite =
+        (newDirection === 'UP' && lastDirection === 'DOWN') ||
+        (newDirection === 'DOWN' && lastDirection === 'UP') ||
+        (newDirection === 'LEFT' && lastDirection === 'RIGHT') ||
+        (newDirection === 'RIGHT' && lastDirection === 'LEFT')
+
+      const isDuplicate = newDirection === lastDirection
+
+      if (!isOpposite && !isDuplicate) {
+        directionQueueRef.current.push(newDirection)
+      }
+    }
 
     const toggleGame = () => {
       if (gameOverRef.current) {
@@ -264,29 +301,27 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
           { x: 8, y: 10 },
         ]
         directionRef.current = 'RIGHT'
-        nextDirectionRef.current = 'RIGHT'
+        directionQueueRef.current = []
 
         foodsRef.current = []
         for (let i = 0; i < appleCount; i++) {
           spawnFood(snakeRef.current)
         }
 
+        scoreRef.current = 0
         onScoreChange(0)
         gameOverRef.current = false
         isPlayingRef.current = true
+        onGameRestart()
         onStateChange(true)
-        onGameOver() // Actually this clears game over state in parent? No parent tracks game over via callback?
-        // Wait, onGameOver is usually called when game ends.
-        // Parent needs to know game is NOT over now.
-        // We might need onGameStart callback?
-        // Or onStateChange(isPlaying, isGameOver)
       } else if (isPlayingRef.current) {
         // Stop
         isPlayingRef.current = false
         onStateChange(false)
       } else {
-        // Resume
+        // Resume or initial start
         isPlayingRef.current = true
+        onGameRestart()
         onStateChange(true)
       }
     }
@@ -294,7 +329,11 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
     const updateGame = () => {
       prevSnakeRef.current = snakeRef.current.map((p) => ({ ...p }))
       const head = { ...snakeRef.current[0] }
-      directionRef.current = nextDirectionRef.current
+
+      // Consume next direction from queue if available
+      if (directionQueueRef.current.length > 0) {
+        directionRef.current = directionQueueRef.current.shift()!
+      }
 
       switch (directionRef.current) {
         case 'UP':
@@ -374,6 +413,13 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
 
     const scoreRef = useRef(0)
 
+    // Reset score ref when starting game
+    useEffect(() => {
+      if (isPlayingRef.current && !gameOverRef.current) {
+        scoreRef.current = 0
+      }
+    }, [])
+
     const spawnFood = (snake: Point[]) => {
       let newFood: Point
       while (true) {
@@ -394,8 +440,20 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
 
     const drawGame = (g: Graphics, progress: number) => {
       g.clear()
+
+      // Get CSS variables for theme-aware colors
+      const computedStyle = getComputedStyle(document.documentElement)
+      const gameBg = computedStyle.getPropertyValue('--game-bg').trim()
+      const gameGrid = computedStyle.getPropertyValue('--game-grid').trim()
+      const gameBorder = computedStyle.getPropertyValue('--game-border').trim()
+
+      // Convert CSS color to hex (fallback to dark mode colors if not found)
+      const bgColor = gameBg ? parseInt(gameBg.replace('#', ''), 16) : 0x1a1a1a
+      const gridColor = gameGrid ? parseInt(gameGrid.replace('#', ''), 16) : 0x333333
+      const borderColor = gameBorder ? parseInt(gameBorder.replace('#', ''), 16) : 0x000000
+
       g.rect(0, 0, CELL_SIZE * GRID_SIZE, CELL_SIZE * GRID_SIZE)
-      g.fill(0x1a1a1a)
+      g.fill(bgColor)
 
       for (let i = 0; i <= GRID_SIZE; i++) {
         const pos = i * CELL_SIZE
@@ -404,10 +462,10 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
         g.moveTo(0, pos)
         g.lineTo(CELL_SIZE * GRID_SIZE, pos)
       }
-      g.stroke({ width: 1, color: 0x333333, alpha: 0.5 })
+      g.stroke({ width: 1, color: gridColor, alpha: 0.5 })
 
       g.rect(0, 0, CELL_SIZE * GRID_SIZE, CELL_SIZE * GRID_SIZE)
-      g.stroke({ width: 2, color: 0x000000 })
+      g.stroke({ width: 2, color: borderColor })
 
       if (snakeRef.current.length > 0) {
         const points = snakeRef.current.map((segment, i) => {
@@ -426,103 +484,44 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
 
         g.fillStyle = 0xffffff
         points.forEach((p, i) => {
-          // Determine neighbors based on visual position
-          const neighbors = {
-            left: false,
-            right: false,
-            up: false,
-            down: false,
-          }
+          if (i === 0) {
+            // Draw pixel art head for first segment
+            if (gameOverRef.current) {
+              drawPixelSnakeHeadDead(g, p.x, p.y, CELL_SIZE, directionRef.current)
+            } else {
+              drawPixelSnakeHead(g, p.x, p.y, CELL_SIZE, directionRef.current)
+            }
+          } else if (i === points.length - 1 && points.length > 1) {
+            // Draw pixel art tail for last segment
+            // Determine tail direction based on previous segment
+            const prevPoint = points[i - 1]
+            const dx = p.x - prevPoint.x
+            const dy = p.y - prevPoint.y
+            let tailDirection: Direction = 'RIGHT'
 
-          const checkNeighbor = (target: { x: number; y: number }) => {
-            const dx = target.x - p.x
-            const dy = target.y - p.y
-            const threshold = 5 // pixels
+            if (Math.abs(dx) > Math.abs(dy)) {
+              tailDirection = dx > 0 ? 'RIGHT' : 'LEFT'
+            } else {
+              tailDirection = dy > 0 ? 'DOWN' : 'UP'
+            }
 
-            if (dx > threshold) neighbors.right = true
-            if (dx < -threshold) neighbors.left = true
-            if (dy > threshold) neighbors.down = true
-            if (dy < -threshold) neighbors.up = true
-          }
-
-          if (i > 0) checkNeighbor(points[i - 1])
-          if (i < points.length - 1) checkNeighbor(points[i + 1])
-
-          // Draw segment with conditional rounded corners
-          const r = 8
-          const w = CELL_SIZE
-          const h = CELL_SIZE
-          const x = p.x - w / 2
-          const y = p.y - h / 2
-
-          g.beginPath()
-
-          // Top Left
-          // Round if (Left AND Up) OR (!Left AND !Up)
-          // Don't round if (Left XOR Up)
-          if (
-            (neighbors.left && neighbors.up) ||
-            (!neighbors.left && !neighbors.up)
-          ) {
-            g.moveTo(x, y + r)
-            g.arcTo(x, y, x + r, y, r)
+            drawPixelSnakeTail(g, p.x, p.y, CELL_SIZE, tailDirection)
           } else {
-            g.moveTo(x, y)
+            // Draw pixel art body for middle segments
+            drawPixelSnakeBody(g, p.x, p.y, CELL_SIZE)
           }
-
-          // Top Right
-          if (
-            (neighbors.right && neighbors.up) ||
-            (!neighbors.right && !neighbors.up)
-          ) {
-            g.lineTo(x + w - r, y)
-            g.arcTo(x + w, y, x + w, y + r, r)
-          } else {
-            g.lineTo(x + w, y)
-          }
-
-          // Bottom Right
-          if (
-            (neighbors.right && neighbors.down) ||
-            (!neighbors.right && !neighbors.down)
-          ) {
-            g.lineTo(x + w, y + h - r)
-            g.arcTo(x + w, y + h, x + w - r, y + h, r)
-          } else {
-            g.lineTo(x + w, y + h)
-          }
-
-          // Bottom Left
-          if (
-            (neighbors.left && neighbors.down) ||
-            (!neighbors.left && !neighbors.down)
-          ) {
-            g.lineTo(x + r, y + h)
-            g.arcTo(x, y + h, x, y + h - r, r)
-          } else {
-            g.lineTo(x, y + h)
-          }
-
-          g.closePath()
-          g.fill()
         })
       }
 
-      g.fillStyle = 0xffffff
       foodsRef.current.forEach((food) => {
-        g.circle(
-          food.x * CELL_SIZE + CELL_SIZE / 2,
-          food.y * CELL_SIZE + CELL_SIZE / 2,
-          CELL_SIZE / 3,
-        )
-        g.fill()
+        drawPixelApple(g, food.x, food.y, CELL_SIZE)
       })
     }
 
     return (
       <div
         ref={containerRef}
-        className="border-4 border-black rounded-sm shadow-lg"
+        className="rounded-lg shadow-lg overflow-hidden"
       />
     )
   },
