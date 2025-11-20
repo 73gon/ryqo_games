@@ -1,0 +1,85 @@
+{
+  "navbar": {
+    "title": "Template"
+  },
+  "language": {
+    "select": "Select Language",
+    "german": "German",
+    "english": "English"
+  },
+  "footer": {
+    "copyright": "Copyright © 2025. All rights reserved.",
+    "disclaimer": "This is a template project."
+  },
+  "title": "React + Vite + TanStack Start Template",
+  "subtitle": "A comprehensive starter template with modern tooling",
+  "description": "This is a production-ready template built with modern web technologies. It includes routing, theming, internationalization, and a comprehensive UI component library. Perfect for kickstarting your next project!",
+  "darkMode": {
+    "title": "Dark Mode",
+    "description": "Toggle between light, dark, and system themes using next-themes with seamless transitions."
+  },
+  "translation": {
+    "title": "Internationalization",
+    "description": "Multi-language support with i18next. Switch between languages dynamically.",
+    "selectLanguage": "Select Language"
+  },
+  "components": {
+    "title": "UI Components",
+    "description": "Showcase of all available UI components built with Radix UI and Tailwind CSS.",
+    "button": {
+      "title": "Buttons",
+      "variants": "Variants:",
+      "sizes": "Sizes:",
+      "default": "Default",
+      "destructive": "Destructive",
+      "outline": "Outline",
+      "secondary": "Secondary",
+      "ghost": "Ghost",
+      "link": "Link",
+      "small": "Small",
+      "large": "Large",
+      "icon": "Icon"
+    },
+    "input": {
+      "title": "Input",
+      "placeholder": "Enter text here...",
+      "email": "Email",
+      "emailPlaceholder": "email@example.com"
+    },
+    "textarea": {
+      "title": "Textarea",
+      "placeholder": "Type your message..."
+    },
+    "select": {
+      "title": "Select",
+      "placeholder": "Select an option",
+      "option1": "Option 1",
+      "option2": "Option 2",
+      "option3": "Option 3"
+    },
+    "tooltip": {
+      "title": "Tooltip",
+      "hover": "Hover me",
+      "message": "This is a tooltip!"
+    },
+    "toast": {
+      "title": "Toast Notifications",
+      "trigger": "Show Toast",
+      "message": "This is a toast notification!",
+      "description": "You can use this for alerts and confirmations."
+    }
+  },
+  "dependencies": {
+    "title": "Tech Stack & Dependencies",
+    "description": "This template is built with the following technologies:",
+    "core": "Core",
+    "ui": "UI & Styling",
+    "routing": "Routing",
+    "stateManagement": "State Management",
+    "forms": "Forms & Validation",
+    "http": "HTTP Client",
+    "animation": "Animation",
+    "i18n": "Internationalization",
+    "devTools": "Development"
+  }
+}

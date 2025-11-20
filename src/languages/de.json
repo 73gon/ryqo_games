@@ -1,0 +1,85 @@
+{
+  "navbar": {
+    "title": "Template"
+  },
+  "language": {
+    "select": "Sprache auswählen",
+    "german": "Deutsch",
+    "english": "English"
+  },
+  "footer": {
+    "copyright": "Urheberrecht © 2025. Alle Rechte vorbehalten.",
+    "disclaimer": "Dies ist ein Vorlagenprojekt."
+  },
+  "title": "React + Vite + TanStack Start Vorlage",
+  "subtitle": "Eine umfassende Starter-Vorlage mit modernen Tools",
+  "description": "Dies ist eine produktionsreife Vorlage, die mit modernen Webtechnologien erstellt wurde. Sie umfasst Routing, Theming, Internationalisierung und eine umfassende UI-Komponentenbibliothek. Perfekt für den Start Ihres nächsten Projekts!",
+  "darkMode": {
+    "title": "Dunkelmodus",
+    "description": "Wechseln Sie mit next-themes nahtlos zwischen hellen, dunklen und Systemthemen."
+  },
+  "translation": {
+    "title": "Internationalisierung",
+    "description": "Mehrsprachige Unterstützung mit i18next. Wechseln Sie dynamisch zwischen Sprachen.",
+    "selectLanguage": "Sprache auswählen"
+  },
+  "components": {
+    "title": "UI-Komponenten",
+    "description": "Präsentation aller verfügbaren UI-Komponenten, erstellt mit Radix UI und Tailwind CSS.",
+    "button": {
+      "title": "Schaltflächen",
+      "variants": "Varianten:",
+      "sizes": "Größen:",
+      "default": "Standard",
+      "destructive": "Destruktiv",
+      "outline": "Umriss",
+      "secondary": "Sekundär",
+      "ghost": "Geist",
+      "link": "Link",
+      "small": "Klein",
+      "large": "Groß",
+      "icon": "Symbol"
+    },
+    "input": {
+      "title": "Eingabe",
+      "placeholder": "Text hier eingeben...",
+      "email": "E-Mail",
+      "emailPlaceholder": "email@beispiel.de"
+    },
+    "textarea": {
+      "title": "Textbereich",
+      "placeholder": "Geben Sie Ihre Nachricht ein..."
+    },
+    "select": {
+      "title": "Auswahl",
+      "placeholder": "Wählen Sie eine Option",
+      "option1": "Option 1",
+      "option2": "Option 2",
+      "option3": "Option 3"
+    },
+    "tooltip": {
+      "title": "Tooltip",
+      "hover": "Bewegen Sie die Maus hierher",
+      "message": "Dies ist ein Tooltip!"
+    },
+    "toast": {
+      "title": "Toast-Benachrichtigungen",
+      "trigger": "Toast anzeigen",
+      "message": "Dies ist eine Toast-Benachrichtigung!",
+      "description": "Sie können dies für Warnungen und Bestätigungen verwenden."
+    }
+  },
+  "dependencies": {
+    "title": "Tech-Stack & Abhängigkeiten",
+    "description": "Diese Vorlage wurde mit den folgenden Technologien erstellt:",
+    "core": "Kern",
+    "ui": "UI & Styling",
+    "routing": "Routing",
+    "stateManagement": "Zustandsverwaltung",
+    "forms": "Formulare & Validierung",
+    "http": "HTTP-Client",
+    "animation": "Animation",
+    "i18n": "Internationalisierung",
+    "devTools": "Entwicklung"
+  }
+}
