@@ -449,8 +449,12 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
 
       // Convert CSS color to hex (fallback to dark mode colors if not found)
       const bgColor = gameBg ? parseInt(gameBg.replace('#', ''), 16) : 0x1a1a1a
-      const gridColor = gameGrid ? parseInt(gameGrid.replace('#', ''), 16) : 0x333333
-      const borderColor = gameBorder ? parseInt(gameBorder.replace('#', ''), 16) : 0x000000
+      const gridColor = gameGrid
+        ? parseInt(gameGrid.replace('#', ''), 16)
+        : 0x333333
+      const borderColor = gameBorder
+        ? parseInt(gameBorder.replace('#', ''), 16)
+        : 0x000000
 
       g.rect(0, 0, CELL_SIZE * GRID_SIZE, CELL_SIZE * GRID_SIZE)
       g.fill(bgColor)
@@ -487,7 +491,13 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
           if (i === 0) {
             // Draw pixel art head for first segment
             if (gameOverRef.current) {
-              drawPixelSnakeHeadDead(g, p.x, p.y, CELL_SIZE, directionRef.current)
+              drawPixelSnakeHeadDead(
+                g,
+                p.x,
+                p.y,
+                CELL_SIZE,
+                directionRef.current,
+              )
             } else {
               drawPixelSnakeHead(g, p.x, p.y, CELL_SIZE, directionRef.current)
             }
