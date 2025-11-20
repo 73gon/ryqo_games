@@ -10,33 +10,128 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GamesTetrisRouteImport } from './routes/games/tetris'
+import { Route as GamesSnakeRouteImport } from './routes/games/snake'
+import { Route as GamesPongRouteImport } from './routes/games/pong'
+import { Route as GamesPacmanRouteImport } from './routes/games/pacman'
+import { Route as GamesMinesweeperRouteImport } from './routes/games/minesweeper'
+import { Route as GamesGame2048RouteImport } from './routes/games/game-2048'
+import { Route as GamesBreakoutRouteImport } from './routes/games/breakout'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GamesTetrisRoute = GamesTetrisRouteImport.update({
+  id: '/games/tetris',
+  path: '/games/tetris',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesSnakeRoute = GamesSnakeRouteImport.update({
+  id: '/games/snake',
+  path: '/games/snake',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesPongRoute = GamesPongRouteImport.update({
+  id: '/games/pong',
+  path: '/games/pong',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesPacmanRoute = GamesPacmanRouteImport.update({
+  id: '/games/pacman',
+  path: '/games/pacman',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesMinesweeperRoute = GamesMinesweeperRouteImport.update({
+  id: '/games/minesweeper',
+  path: '/games/minesweeper',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesGame2048Route = GamesGame2048RouteImport.update({
+  id: '/games/game-2048',
+  path: '/games/game-2048',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesBreakoutRoute = GamesBreakoutRouteImport.update({
+  id: '/games/breakout',
+  path: '/games/breakout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/games/breakout': typeof GamesBreakoutRoute
+  '/games/game-2048': typeof GamesGame2048Route
+  '/games/minesweeper': typeof GamesMinesweeperRoute
+  '/games/pacman': typeof GamesPacmanRoute
+  '/games/pong': typeof GamesPongRoute
+  '/games/snake': typeof GamesSnakeRoute
+  '/games/tetris': typeof GamesTetrisRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/games/breakout': typeof GamesBreakoutRoute
+  '/games/game-2048': typeof GamesGame2048Route
+  '/games/minesweeper': typeof GamesMinesweeperRoute
+  '/games/pacman': typeof GamesPacmanRoute
+  '/games/pong': typeof GamesPongRoute
+  '/games/snake': typeof GamesSnakeRoute
+  '/games/tetris': typeof GamesTetrisRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/games/breakout': typeof GamesBreakoutRoute
+  '/games/game-2048': typeof GamesGame2048Route
+  '/games/minesweeper': typeof GamesMinesweeperRoute
+  '/games/pacman': typeof GamesPacmanRoute
+  '/games/pong': typeof GamesPongRoute
+  '/games/snake': typeof GamesSnakeRoute
+  '/games/tetris': typeof GamesTetrisRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/games/breakout'
+    | '/games/game-2048'
+    | '/games/minesweeper'
+    | '/games/pacman'
+    | '/games/pong'
+    | '/games/snake'
+    | '/games/tetris'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/games/breakout'
+    | '/games/game-2048'
+    | '/games/minesweeper'
+    | '/games/pacman'
+    | '/games/pong'
+    | '/games/snake'
+    | '/games/tetris'
+  id:
+    | '__root__'
+    | '/'
+    | '/games/breakout'
+    | '/games/game-2048'
+    | '/games/minesweeper'
+    | '/games/pacman'
+    | '/games/pong'
+    | '/games/snake'
+    | '/games/tetris'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GamesBreakoutRoute: typeof GamesBreakoutRoute
+  GamesGame2048Route: typeof GamesGame2048Route
+  GamesMinesweeperRoute: typeof GamesMinesweeperRoute
+  GamesPacmanRoute: typeof GamesPacmanRoute
+  GamesPongRoute: typeof GamesPongRoute
+  GamesSnakeRoute: typeof GamesSnakeRoute
+  GamesTetrisRoute: typeof GamesTetrisRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +143,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/games/tetris': {
+      id: '/games/tetris'
+      path: '/games/tetris'
+      fullPath: '/games/tetris'
+      preLoaderRoute: typeof GamesTetrisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/snake': {
+      id: '/games/snake'
+      path: '/games/snake'
+      fullPath: '/games/snake'
+      preLoaderRoute: typeof GamesSnakeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/pong': {
+      id: '/games/pong'
+      path: '/games/pong'
+      fullPath: '/games/pong'
+      preLoaderRoute: typeof GamesPongRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/pacman': {
+      id: '/games/pacman'
+      path: '/games/pacman'
+      fullPath: '/games/pacman'
+      preLoaderRoute: typeof GamesPacmanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/minesweeper': {
+      id: '/games/minesweeper'
+      path: '/games/minesweeper'
+      fullPath: '/games/minesweeper'
+      preLoaderRoute: typeof GamesMinesweeperRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/game-2048': {
+      id: '/games/game-2048'
+      path: '/games/game-2048'
+      fullPath: '/games/game-2048'
+      preLoaderRoute: typeof GamesGame2048RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/breakout': {
+      id: '/games/breakout'
+      path: '/games/breakout'
+      fullPath: '/games/breakout'
+      preLoaderRoute: typeof GamesBreakoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GamesBreakoutRoute: GamesBreakoutRoute,
+  GamesGame2048Route: GamesGame2048Route,
+  GamesMinesweeperRoute: GamesMinesweeperRoute,
+  GamesPacmanRoute: GamesPacmanRoute,
+  GamesPongRoute: GamesPongRoute,
+  GamesSnakeRoute: GamesSnakeRoute,
+  GamesTetrisRoute: GamesTetrisRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

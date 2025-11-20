@@ -14,8 +14,8 @@ export function LanguageSwitcher() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant='outline' size='sm' className='gap-2 border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground'>
-          <Languages className='h-4 w-4' />
-          <span className='hidden sm:inline'>{t('language.select')}</span>
+          <Languages className='size-5' />
+            <span className='hidden sm:inline'>{i18n.language === 'en' ? t('language.english') : i18n.language === 'de' ? t('language.german') : i18n.language}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='bg-popover border-border'>

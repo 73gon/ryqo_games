@@ -1,6 +1,6 @@
 {
   "navbar": {
-    "title": "Template"
+    "title": "Games"
   },
   "language": {
     "select": "Select Language",
@@ -11,75 +11,49 @@
     "copyright": "Copyright © 2025. All rights reserved.",
     "disclaimer": "This is a template project."
   },
-  "title": "React + Vite + TanStack Start Template",
-  "subtitle": "A comprehensive starter template with modern tooling",
-  "description": "This is a production-ready template built with modern web technologies. It includes routing, theming, internationalization, and a comprehensive UI component library. Perfect for kickstarting your next project!",
-  "darkMode": {
-    "title": "Dark Mode",
-    "description": "Toggle between light, dark, and system themes using next-themes with seamless transitions."
-  },
-  "translation": {
-    "title": "Internationalization",
-    "description": "Multi-language support with i18next. Switch between languages dynamically.",
-    "selectLanguage": "Select Language"
-  },
-  "components": {
-    "title": "UI Components",
-    "description": "Showcase of all available UI components built with Radix UI and Tailwind CSS.",
-    "button": {
-      "title": "Buttons",
-      "variants": "Variants:",
-      "sizes": "Sizes:",
-      "default": "Default",
-      "destructive": "Destructive",
-      "outline": "Outline",
-      "secondary": "Secondary",
-      "ghost": "Ghost",
-      "link": "Link",
-      "small": "Small",
-      "large": "Large",
-      "icon": "Icon"
+  "games": {
+    "hub": {
+      "title": "Mini-Games Hub",
+      "subtitle": "A collection of classic arcade and puzzle games built with React, PixiJS, and Tailwind CSS."
     },
-    "input": {
-      "title": "Input",
-      "placeholder": "Enter text here...",
-      "email": "Email",
-      "emailPlaceholder": "email@example.com"
+    "titles": {
+      "snake": "Snake",
+      "tetris": "Tetris",
+      "pacman": "Pac-Man",
+      "2048": "2048",
+      "minesweeper": "Minesweeper",
+      "pong": "Pong",
+      "breakout": "Breakout"
     },
-    "textarea": {
-      "title": "Textarea",
-      "placeholder": "Type your message..."
+    "descriptions": {
+      "snake": "Classic snake game. Eat apples, grow longer, don't hit the wall.",
+      "tetris": "Stack the falling blocks to clear lines.",
+      "pacman": "Eat all the dots while avoiding ghosts.",
+      "2048": "Combine tiles to reach the number 2048.",
+      "minesweeper": "Find the mines without detonating them.",
+      "pong": "Classic table tennis arcade game.",
+      "breakout": "Destroy all bricks with the ball."
     },
-    "select": {
-      "title": "Select",
-      "placeholder": "Select an option",
-      "option1": "Option 1",
-      "option2": "Option 2",
-      "option3": "Option 3"
+    "types": {
+      "arcade": "Arcade",
+      "puzzle": "Puzzle"
     },
-    "tooltip": {
-      "title": "Tooltip",
-      "hover": "Hover me",
-      "message": "This is a tooltip!"
-    },
-    "toast": {
-      "title": "Toast Notifications",
-      "trigger": "Show Toast",
-      "message": "This is a toast notification!",
-      "description": "You can use this for alerts and confirmations."
+    "common": {
+      "score": "Score",
+      "start": "Start",
+      "restart": "Restart",
+      "playing": "Playing",
+      "gameOver": "GAME OVER",
+      "youWin": "You Win!",
+      "comingSoon": "Coming Soon",
+      "controls": {
+        "move": "Use Arrow Keys to move",
+        "reveal": "Left click to reveal, Right click to flag",
+        "tiles": "Use Arrow Keys to move tiles"
+      }
     }
   },
-  "dependencies": {
-    "title": "Tech Stack & Dependencies",
-    "description": "This template is built with the following technologies:",
-    "core": "Core",
-    "ui": "UI & Styling",
-    "routing": "Routing",
-    "stateManagement": "State Management",
-    "forms": "Forms & Validation",
-    "http": "HTTP Client",
-    "animation": "Animation",
-    "i18n": "Internationalization",
-    "devTools": "Development"
+  "kbd": {
+    "space": "space"
   }
 }

@@ -7,9 +7,5 @@ export const Route = createFileRoute('/')({
 })
 
 function HomePage() {
-  return (
-    <div className="w-full">
-      <Home />
-    </div>
-  )
+  return <Home />
 }
