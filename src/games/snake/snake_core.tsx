@@ -1,11 +1,11 @@
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
 import { Application, Graphics } from 'pixi.js'
 import { useGameSound } from '@/hooks/useGameSound'
-import { drawPixelApple } from './pixel_apple'
-import { drawPixelSnakeHead } from './pixel_snake_head'
-import { drawPixelSnakeHeadDead } from './pixel_snake_head_dead'
-import { drawPixelSnakeBody } from './pixel_snake_body'
-import { drawPixelSnakeTail } from './pixel_snake_tail'
+import { drawPixelApple } from './assets/pixel_apple'
+import { drawPixelSnakeHead } from './assets/pixel_snake_head'
+import { drawPixelSnakeHeadDead } from './assets/pixel_snake_head_dead'
+import { drawPixelSnakeBody } from './assets/pixel_snake_body'
+import { drawPixelSnakeTail } from './assets/pixel_snake_tail'
 
 const CELL_SIZE = 31
 const GRID_SIZE = 20

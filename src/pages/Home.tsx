@@ -15,6 +15,7 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card'
+import SpotlightCard from '@/components/SpotlightCard'
 
 export function Home() {
   const games = [
@@ -90,22 +91,24 @@ export function Home() {
               to={game.href}
               className="block transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-xl"
             >
-              <Card className="h-full hover:bg-accent/50 transition-colors cursor-pointer border-2">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-xl font-bold">
-                    {game.title}
-                  </CardTitle>
-                  <game.icon className="h-6 w-6 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                    {game.type}
-                  </div>
-                  <CardDescription className="text-base">
-                    {game.description}
-                  </CardDescription>
-                </CardContent>
-              </Card>
+              <SpotlightCard className="h-full cursor-pointer p-0 rounded-xl">
+                <Card className="h-full bg-transparent border-0 shadow-none">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-xl font-bold">
+                      {game.title}
+                    </CardTitle>
+                    <game.icon className="h-6 w-6 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                      {game.type}
+                    </div>
+                    <CardDescription className="text-base">
+                      {game.description}
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </SpotlightCard>
             </Link>
           ))}
         </div>

@@ -165,7 +165,7 @@ const ElectricBorder: React.FC<ElectricBorderProps> = ({
     >
       <svg
         ref={svgRef}
-        className="fixed -left-[10000px] -top-[10000px] w-[10px] h-[10px] opacity-[0.001] pointer-events-none"
+        className="fixed -left-[10000px] -top-[10000px] size-2.5 opacity-[0.001] pointer-events-none"
         aria-hidden
         focusable="false"
       >
