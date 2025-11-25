@@ -15,7 +15,7 @@ import {
   kicksI,
   kicksJLSTZ,
 } from './constants';
-import { buildPalette, clamp, type ThemePalette, withAlpha } from './utils';
+import { buildPalette, clamp, type ThemePalette, type PaletteName, withAlpha } from './utils';
 import { Pause } from 'lucide-react';
 
 interface TetrisCoreProps {
@@ -26,6 +26,7 @@ interface TetrisCoreProps {
   onGameOver: () => void;
   onGameRestart: () => void;
   onStateChange: (playing: boolean) => void;
+  palette?: PaletteName;
 }
 
 export interface TetrisGameHandle {
@@ -82,7 +83,7 @@ interface ShakeAnim {
 }
 
 export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
-  ({ startLevel, onScoreChange, onLinesChange, onLevelChange, onGameOver, onGameRestart, onStateChange }, ref) => {
+  ({ startLevel, onScoreChange, onLinesChange, onLevelChange, onGameOver, onGameRestart, onStateChange, palette = 'default' }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const previewCanvasRef = useRef<HTMLCanvasElement>(null);
     const holdCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -124,7 +125,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
     const lockResetRef = useRef(0);
     const lastManualTapRef = useRef(0);
 
-    const paletteRef = useRef<ThemePalette>(buildPalette());
+    const paletteRef = useRef<ThemePalette>(buildPalette(palette));
 
     const collectPieceCells = (piece: Tetromino): { x: number; y: number; type: TetrominoType }[] => {
       const shape = TETROMINO_SHAPES[piece.type][piece.rotation];
@@ -812,7 +813,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
     };
 
     const refreshPalette = () => {
-      paletteRef.current = buildPalette();
+      paletteRef.current = buildPalette(palette);
       render();
     };
 
@@ -1056,7 +1057,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       }
 
       initGrid();
-      paletteRef.current = buildPalette();
+      paletteRef.current = buildPalette(palette);
       const order: number[] = [];
       let left = Math.floor((GRID_WIDTH - 1) / 2);
       let right = left + 1;
@@ -1103,6 +1104,11 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         clearAnimationRef.current = null;
       };
     }, []);
+
+    useEffect(() => {
+      paletteRef.current = buildPalette(palette);
+      render();
+    }, [palette]);
 
     return (
       <div className='flex items-start gap-4'>

@@ -2,12 +2,12 @@ import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GameLayout } from '@/components/GameLayout';
 import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
 import { Play, RotateCcw, Pause } from 'lucide-react';
 import { Kbd } from '@/components/ui/kbd';
 import { TetrisCore, type TetrisGameHandle } from './tetris_core';
-import { LeaderboardPanel } from '../../components/LeaderboardPanel';
+import { LeaderboardPanel } from '@/components/LeaderboardPanel';
 import { useTetrisLeaderboard } from './hooks/useLeaderboard';
+import type { PaletteName } from './utils';
 
 export function TetrisGame() {
   const { t } = useTranslation();
@@ -19,10 +19,11 @@ export function TetrisGame() {
   const [level, setLevel] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
-  const [startLevel, setStartLevel] = useState<number>(() => {
-    const saved = localStorage.getItem('tetrisStartLevel');
-    const parsed = saved ? parseInt(saved, 10) : 1;
-    return Number.isNaN(parsed) ? 1 : Math.min(Math.max(parsed, 1), 15);
+  const startLevel = 1;
+  const [palette, setPalette] = useState<PaletteName>(() => {
+    const saved = localStorage.getItem('tetrisPalette');
+    const allowed: PaletteName[] = ['default', 'indigo', 'coral', 'mono', 'emerald', 'purple'];
+    return allowed.includes(saved as PaletteName) ? (saved as PaletteName) : 'default';
   });
   const {
     leaderboard,
@@ -74,14 +75,14 @@ export function TetrisGame() {
   };
 
   useEffect(() => {
-    localStorage.setItem('tetrisStartLevel', startLevel.toString());
-  }, [startLevel]);
-
-  useEffect(() => {
     if (!isPlaying && !gameOver && !hasStartedRef.current) {
       setLevel(startLevel);
     }
-  }, [startLevel, isPlaying, gameOver]);
+  }, [isPlaying, gameOver]);
+
+  useEffect(() => {
+    localStorage.setItem('tetrisPalette', palette);
+  }, [palette]);
 
   // Keyboard controls
   useEffect(() => {
@@ -252,15 +253,29 @@ export function TetrisGame() {
               resetGameState();
             }}
             onStateChange={handleStateChange}
+            palette={palette}
           />
 
           <div className='flex flex-col gap-4 w-full max-w-xs'>
             <div className='space-y-2'>
               <div className='flex justify-between'>
-                <label className='text-sm font-medium'>Start Level</label>
-                <span className='text-sm text-muted-foreground'>{startLevel}</span>
+                <label className='text-sm font-medium'>Colors</label>
+                <span className='text-sm text-muted-foreground capitalize'>{palette}</span>
               </div>
-              <Slider value={[startLevel]} onValueChange={(v) => setStartLevel(v[0])} min={1} max={15} step={1} disabled={isPlaying} />
+              <div className='grid grid-cols-3 gap-2'>
+                {(['default', 'indigo', 'coral', 'mono', 'emerald', 'purple'] as PaletteName[]).map((name) => (
+                  <Button
+                    key={name}
+                    variant={palette === name ? 'default' : 'outline'}
+                    size='sm'
+                    className='h-9 capitalize'
+                    onClick={() => setPalette(name)}
+                    disabled={isPlaying}
+                  >
+                    {name}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
 
