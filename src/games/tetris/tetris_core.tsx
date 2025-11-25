@@ -15,7 +15,8 @@ const LOCK_DELAY_MS = 450;
 const MAX_LOCK_RESETS = 15;
 
 // Gravity table (ms per row). Clamp to last entry for higher levels.
-const GRAVITY_TABLE = [500, 520, 450, 380, 320, 270, 230, 200, 170, 150, 135, 120, 105, 95, 85];
+const GRAVITY_TABLE = [20, 520, 450, 380, 320, 270, 230, 200, 170, 150, 135, 120, 105, 95, 85];
+const MIN_GRAVITY_MS = 5; // kill-speed floor for very high levels
 
 interface TetrisCoreProps {
   startLevel: number;
@@ -395,8 +396,14 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
     };
 
     const gravityInterval = () => {
-      const idx = clamp(levelRef.current - 1, 0, GRAVITY_TABLE.length - 1);
-      return GRAVITY_TABLE[idx];
+      const levelIdx = levelRef.current - 1;
+      if (levelIdx < GRAVITY_TABLE.length) {
+        return GRAVITY_TABLE[levelIdx];
+      }
+      // Past the table: ramp down linearly until we hit a kill-speed floor.
+      const extraLevels = levelIdx - (GRAVITY_TABLE.length - 1);
+      const decayed = GRAVITY_TABLE[GRAVITY_TABLE.length - 1] - extraLevels * 5;
+      return Math.max(MIN_GRAVITY_MS, decayed);
     };
 
     const getGhostPosition = (piece: Tetromino): number => {
