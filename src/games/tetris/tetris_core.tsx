@@ -11,6 +11,16 @@ const GRID_HEIGHT = 20
 const CELL_SIZE = 30
 const PREVIEW_CELL_SIZE = 22
 
+// Movement/feel tuning
+const DAS = 100 // delay before horizontal repeat
+const ARR = 30 // horizontal repeat interval
+const SOFT_DROP_INTERVAL = 60 // soft drop step interval
+const LOCK_DELAY_MS = 450
+const MAX_LOCK_RESETS = 15
+
+// Gravity table (ms per row). Clamp to last entry for higher levels.
+const GRAVITY_TABLE = [500, 520, 450, 380, 320, 270, 230, 200, 170, 150, 135, 120, 105, 95, 85]
+
 interface TetrisCoreProps {
   startLevel: number
   onScoreChange: (score: number) => void
@@ -25,9 +35,9 @@ export interface TetrisGameHandle {
   startGame: () => void
   stopGame: () => void
   resumeGame: () => void
-  moveLeft: () => void
-  moveRight: () => void
-  moveDown: () => void
+  moveLeft: (pressed?: boolean) => void
+  moveRight: (pressed?: boolean) => void
+  moveDown: (pressed?: boolean) => void
   rotate: () => void
   hardDrop: () => void
   holdPiece: () => void
@@ -54,6 +64,33 @@ interface ClearAnimationState {
   start: number
   duration: number
   isTetris: boolean
+}
+
+interface ClearMessage {
+  id: number
+  text: string
+  points: number
+  start: number
+  duration: number
+  color?: string
+  row: number
+}
+
+interface SpawnAnim {
+  start: number
+  duration: number
+}
+
+interface LockPulse {
+  cells: { x: number; y: number; type: TetrominoType }[]
+  start: number
+  duration: number
+}
+
+interface ShakeAnim {
+  start: number
+  duration: number
+  amplitude: number
 }
 
 const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max)
@@ -183,6 +220,41 @@ const buildPalette = (): ThemePalette => {
   return palette
 }
 
+// SRS-like kick tables (simplified) for JLSTZ and I pieces
+const kicksJLSTZ = [
+  [
+    { x: 0, y: 0 },
+    { x: -1, y: 0 },
+    { x: -1, y: 1 },
+    { x: 0, y: -2 },
+    { x: -1, y: -2 },
+  ],
+  [
+    { x: 0, y: 0 },
+    { x: 1, y: 0 },
+    { x: 1, y: -1 },
+    { x: 0, y: 2 },
+    { x: 1, y: 2 },
+  ],
+]
+
+const kicksI = [
+  [
+    { x: 0, y: 0 },
+    { x: -2, y: 0 },
+    { x: 1, y: 0 },
+    { x: -2, y: -1 },
+    { x: 1, y: 2 },
+  ],
+  [
+    { x: 0, y: 0 },
+    { x: 2, y: 0 },
+    { x: -1, y: 0 },
+    { x: 2, y: 1 },
+    { x: -1, y: -2 },
+  ],
+]
+
 export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
   (
     {
@@ -211,20 +283,46 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
     const gameOverRef = useRef(false)
 
     const gridRef = useRef<(TetrominoType | null)[][]>([])
+    const bagRef = useRef<TetrominoType[]>([])
     const currentPieceRef = useRef<Tetromino | null>(null)
     const nextPieceRef = useRef<TetrominoType | null>(null)
     const holdPieceRef = useRef<TetrominoType | null>(null)
     const holdUsedRef = useRef(false)
     const clearAnimationRef = useRef<ClearAnimationState | null>(null)
+    const clearMessagesRef = useRef<ClearMessage[]>([])
+    const lockTimerRef = useRef<number | null>(null)
     const columnOrderRef = useRef<number[]>([])
     const columnRankRef = useRef<number[]>([])
+    const spawnAnimRef = useRef<SpawnAnim | null>(null)
+    const lockPulseRef = useRef<LockPulse | null>(null)
+    const shakeRef = useRef<ShakeAnim | null>(null)
 
     const scoreRef = useRef(0)
     const linesRef = useRef(0)
     const levelRef = useRef(1)
     const [isPaused, setIsPaused] = useState(false)
+    const leftPressedRef = useRef(false)
+    const rightPressedRef = useRef(false)
+    const downPressedRef = useRef(false)
+    const lastHorizontalPressRef = useRef(0)
+    const lastAutoShiftRef = useRef(0)
+    const lockResetRef = useRef(0)
+    const lastManualTapRef = useRef(0)
 
     const paletteRef = useRef<ThemePalette>(buildPalette())
+
+    const collectPieceCells = (piece: Tetromino): { x: number; y: number; type: TetrominoType }[] => {
+      const shape = TETROMINO_SHAPES[piece.type][piece.rotation]
+      const cells: { x: number; y: number; type: TetrominoType }[] = []
+      for (let row = 0; row < shape.length; row++) {
+        for (let col = 0; col < shape[row].length; col++) {
+          if (shape[row][col]) {
+            cells.push({ x: piece.x + col, y: piece.y + row, type: piece.type })
+          }
+        }
+      }
+      return cells
+    }
 
     const initGrid = () => {
       gridRef.current = Array(GRID_HEIGHT)
@@ -232,9 +330,20 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         .map(() => Array(GRID_WIDTH).fill(null))
     }
 
-    const getRandomTetromino = (): TetrominoType => {
-      const types: TetrominoType[] = ['I', 'O', 'T', 'S', 'Z', 'J', 'L']
-      return types[Math.floor(Math.random() * types.length)]
+    const refillBag = () => {
+      const bag: TetrominoType[] = ['I', 'O', 'T', 'S', 'Z', 'J', 'L']
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[bag[i], bag[j]] = [bag[j], bag[i]]
+      }
+      bagRef.current = bagRef.current.concat(bag)
+    }
+
+    const drawFromBag = (): TetrominoType => {
+      if (bagRef.current.length === 0) {
+        refillBag()
+      }
+      return bagRef.current.shift() as TetrominoType
     }
 
     const createPieceFromType = (type: TetrominoType): Tetromino | null => {
@@ -245,8 +354,8 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
     }
 
     const takeNextPiece = (): Tetromino | null => {
-      const type = nextPieceRef.current || getRandomTetromino()
-      nextPieceRef.current = getRandomTetromino()
+      const type = nextPieceRef.current ?? drawFromBag()
+      nextPieceRef.current = drawFromBag()
       return createPieceFromType(type)
     }
 
@@ -311,6 +420,11 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       return lineScores[linesCleared] * levelRef.current
     }
 
+    const gravityInterval = () => {
+      const idx = clamp(levelRef.current - 1, 0, GRAVITY_TABLE.length - 1)
+      return GRAVITY_TABLE[idx]
+    }
+
     const getGhostPosition = (piece: Tetromino): number => {
       let ghostY = piece.y
       const testPiece = { ...piece }
@@ -326,12 +440,31 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       const palette = paletteRef.current
       const width = GRID_WIDTH * CELL_SIZE
       const height = GRID_HEIGHT * CELL_SIZE
-      ctx.fillStyle = palette.background
+
+      // gradient background with slight vignette
+      const gradient = ctx.createLinearGradient(0, 0, 0, height)
+      gradient.addColorStop(0, withAlpha(palette.background, 1))
+      gradient.addColorStop(1, withAlpha(palette.background, 0.9))
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, width, height)
+
+      // subtle vignette edges
+      const vignette = ctx.createRadialGradient(
+        width / 2,
+        height / 2,
+        Math.min(width, height) * 0.2,
+        width / 2,
+        height / 2,
+        Math.max(width, height) * 0.75,
+      )
+      vignette.addColorStop(0, 'transparent')
+      vignette.addColorStop(1, withAlpha(palette.gridStroke, 0.12))
+      ctx.fillStyle = vignette
       ctx.fillRect(0, 0, width, height)
 
       ctx.strokeStyle = palette.gridStroke
       ctx.lineWidth = 1
-      ctx.globalAlpha = 0.45
+      ctx.globalAlpha = 0.35
 
       for (let x = 0; x <= GRID_WIDTH; x++) {
         const px = x * CELL_SIZE + 0.5
@@ -359,20 +492,49 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       color: string,
       darkColor: string,
       size: number = CELL_SIZE,
+      isActive: boolean = false,
     ) => {
-      ctx.fillStyle = color
-      ctx.fillRect(x, y, size, size)
+      const inset = 1.2
+      const innerX = x + inset
+      const innerY = y + inset
+      const innerSize = size - inset * 2
 
+      ctx.fillStyle = isActive ? withAlpha(color, 0.95) : color
+      ctx.fillRect(innerX, innerY, innerSize, innerSize)
+
+      // outer stroke
       ctx.strokeStyle = darkColor
       ctx.lineWidth = 1
-      ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1)
+      ctx.strokeRect(innerX + 0.5, innerY + 0.5, innerSize - 1, innerSize - 1)
 
-      ctx.fillStyle = withAlpha('#ffffff', 0.2)
-      ctx.fillRect(x + 2, y + 2, size - 4, size / 3)
+      // top/left highlight for depth
+      ctx.strokeStyle = withAlpha('#ffffff', isActive ? 0.3 : 0.2)
+      ctx.beginPath()
+      ctx.moveTo(innerX + 1, innerY + innerSize - 1)
+      ctx.lineTo(innerX + 1, innerY + 1)
+      ctx.lineTo(innerX + innerSize - 1, innerY + 1)
+      ctx.stroke()
+
+      // bottom/right shadow
+      ctx.strokeStyle = withAlpha(darkColor, 0.35)
+      ctx.beginPath()
+      ctx.moveTo(innerX + innerSize - 1, innerY + 1)
+      ctx.lineTo(innerX + innerSize - 1, innerY + innerSize - 1)
+      ctx.lineTo(innerX + 1, innerY + innerSize - 1)
+      ctx.stroke()
+
+      // subtle top sheen
+      ctx.fillStyle = withAlpha('#ffffff', isActive ? 0.28 : 0.18)
+      ctx.fillRect(innerX + 2, innerY + 2, innerSize - 4, innerSize / 3)
     }
 
-    const drawLockedBlocks = (ctx: CanvasRenderingContext2D, skipLines?: Set<number>) => {
+    const drawLockedBlocks = (ctx: CanvasRenderingContext2D, skipLines?: Set<number>, timestamp?: number) => {
       const palette = paletteRef.current
+      const pulse = lockPulseRef.current
+      const pulseProgress =
+        pulse && timestamp
+          ? clamp((timestamp - pulse.start) / pulse.duration, 0, 1)
+          : null
       for (let row = 0; row < GRID_HEIGHT; row++) {
         if (skipLines?.has(row)) continue
         for (let col = 0; col < GRID_WIDTH; col++) {
@@ -380,29 +542,72 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
           if (cellType) {
             const color = palette.pieces[cellType].fill
             const darkColor = palette.pieces[cellType].stroke
-            drawCell(ctx, col * CELL_SIZE, row * CELL_SIZE, color, darkColor)
+            let isPulsing = false
+            let scale = 1
+            if (pulseProgress !== null && pulseProgress < 1 && pulse) {
+              isPulsing = pulse.cells.some((c) => c.x === col && c.y === row)
+              if (isPulsing) {
+                scale = 1 + 0.08 * (1 - pulseProgress)
+              }
+            }
+            if (isPulsing) {
+              ctx.save()
+              ctx.translate(col * CELL_SIZE + CELL_SIZE / 2, row * CELL_SIZE + CELL_SIZE / 2)
+              ctx.scale(scale, scale)
+              drawCell(
+                ctx,
+                -CELL_SIZE / 2,
+                -CELL_SIZE / 2,
+                color,
+                darkColor,
+                CELL_SIZE,
+                false,
+              )
+              ctx.restore()
+            } else {
+              drawCell(ctx, col * CELL_SIZE, row * CELL_SIZE, color, darkColor)
+            }
           }
         }
       }
     }
 
-    const drawCurrentPiece = (ctx: CanvasRenderingContext2D) => {
+    const drawCurrentPiece = (ctx: CanvasRenderingContext2D, timestamp: number) => {
       if (!currentPieceRef.current) return
       const palette = paletteRef.current
       const piece = currentPieceRef.current
       const shape = TETROMINO_SHAPES[piece.type][piece.rotation]
       const color = palette.pieces[piece.type].fill
       const darkColor = palette.pieces[piece.type].stroke
+      const spawn = spawnAnimRef.current
+      const spawnScale =
+        spawn && timestamp
+          ? 1 + 0.12 * (1 - clamp((timestamp - spawn.start) / spawn.duration, 0, 1))
+          : 1
+
+      ctx.save()
+      if (spawnScale !== 1) {
+        ctx.translate(
+          (piece.x + shape[0].length / 2) * CELL_SIZE,
+          (piece.y + shape.length / 2) * CELL_SIZE,
+        )
+        ctx.scale(spawnScale, spawnScale)
+        ctx.translate(
+          -(piece.x + shape[0].length / 2) * CELL_SIZE,
+          -(piece.y + shape.length / 2) * CELL_SIZE,
+        )
+      }
 
       for (let row = 0; row < shape.length; row++) {
         for (let col = 0; col < shape[row].length; col++) {
           if (shape[row][col]) {
             const x = (piece.x + col) * CELL_SIZE
             const y = (piece.y + row) * CELL_SIZE
-            drawCell(ctx, x, y, color, darkColor)
+            drawCell(ctx, x, y, color, darkColor, CELL_SIZE, true)
           }
         }
       }
+      ctx.restore()
     }
 
     const drawGhostPiece = (ctx: CanvasRenderingContext2D) => {
@@ -519,36 +724,108 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       ctx.restore()
     }
 
+    const drawClearMessages = (ctx: CanvasRenderingContext2D, timestamp: number) => {
+      const msgs = clearMessagesRef.current
+      if (!msgs.length) return
+      const width = GRID_WIDTH * CELL_SIZE
+      const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+      const baseTextColor = isDark ? '#ffffff' : '#0f172a'
+
+      clearMessagesRef.current = msgs.filter((m) => timestamp - m.start < m.duration)
+
+      clearMessagesRef.current.forEach((msg) => {
+        const progress = clamp((timestamp - msg.start) / msg.duration, 0, 1)
+        const alpha = 1 - progress
+        const y = GRID_HEIGHT * CELL_SIZE * 0.45 - progress * 25
+        const scale = progress < 0.25 ? 0.9 + progress * 0.6 : 1 + (progress - 0.25) * 0.12
+        const color = baseTextColor
+
+        ctx.save()
+        ctx.translate(width / 2, y)
+        ctx.scale(scale, scale)
+        ctx.globalAlpha = alpha
+        ctx.fillStyle = color
+        ctx.font = 'bold 22px "JetBrains Mono", monospace'
+        ctx.textAlign = 'center'
+        ctx.fillText(msg.text, 0, 0)
+        ctx.font = 'bold 16px "JetBrains Mono", monospace'
+        ctx.fillText(`+${msg.points}`, 0, 22)
+        ctx.restore()
+      })
+    }
+
     const render = (timestamp: number = performance.now()) => {
       const ctx = ctxRef.current
       if (!ctx) return
 
+      // shake animation on tetris
+      const shake = shakeRef.current
+      if (shake && timestamp - shake.start > shake.duration) {
+        shakeRef.current = null
+      }
+      const shakeProgress =
+        shake && shake.duration > 0 ? 1 - clamp((timestamp - shake.start) / shake.duration, 0, 1) : 0
+      const shakeOffset =
+        shake && shakeProgress > 0
+          ? (Math.sin(timestamp * 0.05) * shake.amplitude * shakeProgress)
+          : 0
+
+      ctx.save()
+      if (shakeOffset !== 0) {
+        ctx.translate(shakeOffset, shakeOffset / 2)
+      }
+
       drawGridBackground(ctx)
       const anim = clearAnimationRef.current
       const skip = anim ? new Set(anim.lines) : undefined
-      drawLockedBlocks(ctx, skip)
+      drawLockedBlocks(ctx, skip, timestamp)
       drawGhostPiece(ctx)
-      drawCurrentPiece(ctx)
+      drawCurrentPiece(ctx, timestamp)
 
       if (anim) {
         drawClearAnimation(ctx, anim, timestamp)
       }
+      drawClearMessages(ctx, timestamp)
 
       drawPreviewPiece(previewCtxRef.current, nextPieceRef.current)
       drawPreviewPiece(holdCtxRef.current, holdPieceRef.current)
+
+      ctx.restore()
     }
 
     const finalizeClear = (lines: number[]) => {
       removeLines(lines)
       const linesCleared = lines.length
       if (linesCleared > 0) {
+        const gained = calculateScore(linesCleared)
         linesRef.current += linesCleared
-        scoreRef.current += calculateScore(linesCleared)
+        scoreRef.current += gained
         const baseLevel = Math.max(1, startLevel)
         levelRef.current = baseLevel + Math.floor(linesRef.current / 10)
         onScoreChange(scoreRef.current)
         onLinesChange(linesRef.current)
         onLevelChange(levelRef.current)
+
+        if (linesCleared >= 2) {
+          const label =
+            linesCleared === 4 ? 'TETRIS' : linesCleared === 3 ? 'TRIPLE' : 'DOUBLE'
+          const duration = linesCleared === 4 ? 1500 : 1100
+          const medianRow =
+            lines.reduce((sum, r) => sum + r, 0) / lines.length || GRID_HEIGHT / 2
+          clearMessagesRef.current.push({
+            id: performance.now() + Math.random(),
+            text: label,
+            points: gained,
+            start: performance.now(),
+            duration,
+            color: linesCleared === 4 ? '#f97316' : undefined,
+            row: medianRow,
+          })
+        }
+      }
+
+      if (linesCleared === 4) {
+        shakeRef.current = { start: performance.now(), duration: 450, amplitude: 4 }
       }
 
       clearAnimationRef.current = null
@@ -587,6 +864,12 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       if (!currentPieceRef.current) return false
       lockPiece(currentPieceRef.current)
       holdUsedRef.current = false
+      cancelLockTimer()
+      lockPulseRef.current = {
+        cells: collectPieceCells(currentPieceRef.current),
+        start: performance.now(),
+        duration: 220,
+      }
       const fullLines = findFullLines()
       if (fullLines.length > 0) {
         currentPieceRef.current = null
@@ -606,40 +889,111 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       }
 
       currentPieceRef.current = newPiece
+      spawnAnimRef.current = { start: performance.now(), duration: 110 }
       render()
       return true
     }
 
     const moveDown = (): boolean => {
       if (!currentPieceRef.current || clearAnimationRef.current) return false
-
       const newPiece = { ...currentPieceRef.current, y: currentPieceRef.current.y + 1 }
       if (isValidPosition(newPiece)) {
         currentPieceRef.current = newPiece
+        cancelLockTimer()
         return true
       }
+      startLockTimer()
+      return false
+    }
 
-      return handleLock()
+    const applyGravity = () => {
+      if (!currentPieceRef.current || clearAnimationRef.current) return
+      const newPiece = { ...currentPieceRef.current, y: currentPieceRef.current.y + 1 }
+      if (isValidPosition(newPiece)) {
+        currentPieceRef.current = newPiece
+      } else {
+        startLockTimer()
+      }
+    }
+
+    const processSoftDrop = (now: number) => {
+      if (!downPressedRef.current || clearAnimationRef.current || !currentPieceRef.current) return
+      if (now - lastMoveTimeRef.current < SOFT_DROP_INTERVAL) return
+      const moved = moveDown()
+      if (!moved) startLockTimer()
+      lastMoveTimeRef.current = now
+    }
+
+    const processHorizontal = (now: number) => {
+      if (!currentPieceRef.current || clearAnimationRef.current) return
+      const left = leftPressedRef.current
+      const right = rightPressedRef.current
+      if (left && right) return
+      const dir = left ? -1 : right ? 1 : 0
+      if (!dir) return
+
+      if (lastHorizontalPressRef.current === 0) {
+        if (moveHorizontal(dir)) {
+          lastHorizontalPressRef.current = now
+          lastAutoShiftRef.current = now
+        }
+        return
+      }
+
+      const sincePress = now - lastHorizontalPressRef.current
+      if (sincePress < DAS) return
+      if (now - lastAutoShiftRef.current >= ARR) {
+        if (moveHorizontal(dir)) {
+          lastAutoShiftRef.current = now
+        }
+      }
+    }
+
+    const moveHorizontal = (dir: number) => {
+      if (!currentPieceRef.current) return false
+      const moved = { ...currentPieceRef.current, x: currentPieceRef.current.x + dir }
+      if (isValidPosition(moved)) {
+        currentPieceRef.current = moved
+        // lock delay reset on ground nudge
+        const below = { ...moved, y: moved.y + 1 }
+        if (!isValidPosition(below) && lockResetRef.current < MAX_LOCK_RESETS) {
+          lockResetRef.current += 1
+          cancelLockTimer()
+        }
+        return true
+      }
+      return false
     }
 
     const gameLoop = (timestamp: number) => {
       if (!isPlayingRef.current || gameOverRef.current) return
 
-      if (clearAnimationRef.current) {
-        render(timestamp)
-        animationFrameRef.current = requestAnimationFrame(gameLoop)
-        return
-      }
+      const moveInterval = gravityInterval()
 
-      const moveInterval = Math.max(80, 1000 - (levelRef.current - 1) * 60)
-
-      if (timestamp - lastMoveTimeRef.current > moveInterval) {
-        moveDown()
-        render(timestamp)
+      if (!clearAnimationRef.current && timestamp - lastMoveTimeRef.current > moveInterval) {
+        applyGravity()
         lastMoveTimeRef.current = timestamp
       }
 
+      processSoftDrop(timestamp)
+      processHorizontal(timestamp)
+      render(timestamp)
       animationFrameRef.current = requestAnimationFrame(gameLoop)
+    }
+
+    const startLockTimer = () => {
+      if (lockTimerRef.current) return
+      lockTimerRef.current = window.setTimeout(() => {
+        lockTimerRef.current = null
+        handleLock()
+      }, LOCK_DELAY_MS)
+    }
+
+    const cancelLockTimer = () => {
+      if (lockTimerRef.current) {
+        clearTimeout(lockTimerRef.current)
+        lockTimerRef.current = null
+      }
     }
 
     const refreshPalette = () => {
@@ -669,6 +1023,22 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       render()
     }
 
+    const attemptRotate = (piece: Tetromino, newRotation: number): Tetromino | null => {
+      const kicks = piece.type === 'I' ? kicksI : kicksJLSTZ
+      const from = piece.rotation % 2
+      const tests = kicks[from]
+      for (const kick of tests) {
+        const candidate = {
+          ...piece,
+          rotation: newRotation,
+          x: piece.x + kick.x,
+          y: piece.y + kick.y,
+        }
+        if (isValidPosition(candidate)) return candidate
+      }
+      return null
+    }
+
     useImperativeHandle(ref, () => ({
       startGame: () => {
         refreshPalette()
@@ -680,12 +1050,25 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         holdUsedRef.current = false
         gameOverRef.current = false
         clearAnimationRef.current = null
+        clearMessagesRef.current = []
+        spawnAnimRef.current = null
+        lockPulseRef.current = null
+        shakeRef.current = null
+        bagRef.current = []
+        lockResetRef.current = 0
+        leftPressedRef.current = false
+        rightPressedRef.current = false
+        downPressedRef.current = false
+        lastHorizontalPressRef.current = 0
+        lastAutoShiftRef.current = 0
+        cancelLockTimer()
         onScoreChange(0)
         onLinesChange(0)
         onLevelChange(levelRef.current)
         onGameRestart()
 
-        nextPieceRef.current = getRandomTetromino()
+        refillBag()
+        nextPieceRef.current = drawFromBag()
         currentPieceRef.current = takeNextPiece()
 
         isPlayingRef.current = true
@@ -702,25 +1085,40 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current)
         }
+        cancelLockTimer()
+        clearMessagesRef.current = []
       },
       resumeGame: resumeInternal,
-      moveLeft: () => {
+      moveLeft: (pressed = true) => {
+        if (!pressed) return
         if (!currentPieceRef.current || !isPlayingRef.current || clearAnimationRef.current) return
+        const now = performance.now()
+        if (now - lastManualTapRef.current < 70) return
+        lastManualTapRef.current = now
         const newPiece = { ...currentPieceRef.current, x: currentPieceRef.current.x - 1 }
         if (isValidPosition(newPiece)) {
           currentPieceRef.current = newPiece
+          cancelLockTimer()
+          lockResetRef.current = 0
           render()
         }
       },
-      moveRight: () => {
+      moveRight: (pressed = true) => {
+        if (!pressed) return
         if (!currentPieceRef.current || !isPlayingRef.current || clearAnimationRef.current) return
+        const now = performance.now()
+        if (now - lastManualTapRef.current < 70) return
+        lastManualTapRef.current = now
         const newPiece = { ...currentPieceRef.current, x: currentPieceRef.current.x + 1 }
         if (isValidPosition(newPiece)) {
           currentPieceRef.current = newPiece
+          cancelLockTimer()
+          lockResetRef.current = 0
           render()
         }
       },
-      moveDown: () => {
+      moveDown: (pressed = true) => {
+        if (!pressed) return
         if (!currentPieceRef.current || !isPlayingRef.current || clearAnimationRef.current) return
         if (moveDown()) {
           render()
@@ -731,40 +1129,20 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         const piece = currentPieceRef.current
         const numRotations = TETROMINO_SHAPES[piece.type].length
         const newRotation = (piece.rotation + 1) % numRotations
-        const newPiece = { ...piece, rotation: newRotation }
-
-        if (isValidPosition(newPiece)) {
-          currentPieceRef.current = newPiece
+        const kicked = attemptRotate(piece, newRotation)
+        if (kicked) {
+          currentPieceRef.current = kicked
+          if (lockResetRef.current < MAX_LOCK_RESETS) lockResetRef.current += 1
+          cancelLockTimer()
           render()
-          return
-        }
-
-        const kicks = [
-          { x: -1, y: 0 },
-          { x: 1, y: 0 },
-          { x: 0, y: -1 },
-          { x: -2, y: 0 },
-          { x: 2, y: 0 },
-        ]
-
-        for (const kick of kicks) {
-          const kickedPiece = {
-            ...newPiece,
-            x: newPiece.x + kick.x,
-            y: newPiece.y + kick.y,
-          }
-          if (isValidPosition(kickedPiece)) {
-            currentPieceRef.current = kickedPiece
-            render()
-            return
-          }
         }
       },
       hardDrop: () => {
         if (!currentPieceRef.current || !isPlayingRef.current || clearAnimationRef.current) return
         const ghostY = getGhostPosition(currentPieceRef.current)
-        currentPieceRef.current.y = ghostY
-        moveDown()
+        currentPieceRef.current = { ...currentPieceRef.current, y: ghostY }
+        cancelLockTimer()
+        handleLock()
         render()
       },
       holdPiece: () => {
@@ -842,7 +1220,18 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         ranks[col] = idx
       })
       columnRankRef.current = ranks
-      nextPieceRef.current = getRandomTetromino()
+      bagRef.current = []
+      refillBag()
+      nextPieceRef.current = drawFromBag()
+      spawnAnimRef.current = null
+      lockPulseRef.current = null
+      shakeRef.current = null
+      lockResetRef.current = 0
+      leftPressedRef.current = false
+      rightPressedRef.current = false
+      downPressedRef.current = false
+      lastHorizontalPressRef.current = 0
+      lastAutoShiftRef.current = 0
       render()
 
       const observer = new MutationObserver(refreshPalette)
@@ -856,6 +1245,9 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         if (clearAnimationTimeoutRef.current) {
           clearTimeout(clearAnimationTimeoutRef.current)
         }
+        cancelLockTimer()
+        clearMessagesRef.current = []
+        clearAnimationRef.current = null
       }
     }, [])
 

@@ -13,9 +13,6 @@ export function TetrisGame() {
   const gameRef = useRef<TetrisGameHandle>(null)
   const hasStartedRef = useRef(false)
   const scoreRef = useRef(0)
-  const autoShiftTimeoutRef = useRef<number | null>(null)
-  const autoShiftIntervalRef = useRef<number | null>(null)
-  const heldDirRef = useRef<'left' | 'right' | null>(null)
   const [score, setScore] = useState(0)
   const [lines, setLines] = useState(0)
   const [level, setLevel] = useState(1)
@@ -113,41 +110,6 @@ export function TetrisGame() {
     }
   }, [startLevel, isPlaying, gameOver])
 
-  const clearAutoShift = (dir?: 'left' | 'right') => {
-    if (dir && heldDirRef.current && heldDirRef.current !== dir) return
-    heldDirRef.current = null
-    if (autoShiftTimeoutRef.current) {
-      clearTimeout(autoShiftTimeoutRef.current)
-      autoShiftTimeoutRef.current = null
-    }
-    if (autoShiftIntervalRef.current) {
-      clearInterval(autoShiftIntervalRef.current)
-      autoShiftIntervalRef.current = null
-    }
-  }
-
-  const startAutoShift = (dir: 'left' | 'right') => {
-    if (heldDirRef.current === dir || !isPlaying || gameOver) return
-    clearAutoShift()
-    heldDirRef.current = dir
-    if (dir === 'left') {
-      gameRef.current?.moveLeft()
-    } else {
-      gameRef.current?.moveRight()
-    }
-    autoShiftTimeoutRef.current = window.setTimeout(() => {
-      autoShiftIntervalRef.current = window.setInterval(() => {
-        if (dir === 'left') {
-          gameRef.current?.moveLeft()
-        } else {
-          gameRef.current?.moveRight()
-        }
-      }, 45)
-    }, 90)
-  }
-
-  useEffect(() => clearAutoShift(), [isPlaying, gameOver])
-
   const handleClearLeaderboard = () => {
     setHighScores([])
     setLastAddedScoreIndex(null)
@@ -189,23 +151,17 @@ export function TetrisGame() {
       switch (e.code) {
         case 'Enter':
           e.preventDefault()
-          if (isPlaying) {
-            gameRef.current?.stopGame()
-          } else {
-            gameRef.current?.resumeGame()
-          }
+          if (isPlaying) gameRef.current?.stopGame()
+          else gameRef.current?.resumeGame()
           break
         case 'ArrowLeft':
-          e.preventDefault()
-          startAutoShift('left')
+          gameRef.current?.moveLeft(true)
           break
         case 'ArrowRight':
-          e.preventDefault()
-          startAutoShift('right')
+          gameRef.current?.moveRight(true)
           break
         case 'ArrowDown':
-          e.preventDefault()
-          gameRef.current?.moveDown()
+          gameRef.current?.moveDown(true)
           break
         case 'ArrowUp':
         case 'KeyX':
@@ -246,9 +202,11 @@ export function TetrisGame() {
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'ArrowLeft') {
-        clearAutoShift('left')
+        gameRef.current?.moveLeft(false)
       } else if (e.code === 'ArrowRight') {
-        clearAutoShift('right')
+        gameRef.current?.moveRight(false)
+      } else if (e.code === 'ArrowDown') {
+        gameRef.current?.moveDown(false)
       }
     }
 
@@ -257,7 +215,6 @@ export function TetrisGame() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
-      clearAutoShift()
     }
   }, [isPlaying, gameOver])
 
