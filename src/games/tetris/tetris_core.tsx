@@ -27,6 +27,8 @@ interface TetrisCoreProps {
   onGameRestart: () => void;
   onStateChange: (playing: boolean) => void;
   palette?: PaletteName;
+  onLineClear?: (linesCleared: number) => void;
+  onMove?: () => void;
 }
 
 export interface TetrisGameHandle {
@@ -83,7 +85,7 @@ interface ShakeAnim {
 }
 
 export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
-  ({ startLevel, onScoreChange, onLinesChange, onLevelChange, onGameOver, onGameRestart, onStateChange, palette = 'default' }, ref) => {
+  ({ startLevel, onScoreChange, onLinesChange, onLevelChange, onGameOver, onGameRestart, onStateChange, palette = 'default', onLineClear, onMove }, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const previewCanvasRef = useRef<HTMLCanvasElement>(null);
     const holdCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -681,6 +683,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       if (fullLines.length > 0) {
         currentPieceRef.current = null;
         startClearAnimation(fullLines);
+        onLineClear?.(fullLines.length);
         return true;
       }
 
@@ -770,6 +773,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       };
       if (isValidPosition(moved)) {
         currentPieceRef.current = moved;
+        onMove?.();
         // lock delay reset on ground nudge
         const below = { ...moved, y: moved.y + 1 };
         if (!isValidPosition(below) && lockResetRef.current < MAX_LOCK_RESETS) {
@@ -927,6 +931,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         };
         if (isValidPosition(newPiece)) {
           currentPieceRef.current = newPiece;
+          onMove?.();
           cancelLockTimer();
           lockResetRef.current = 0;
           render();
@@ -954,6 +959,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         };
         if (isValidPosition(newPiece)) {
           currentPieceRef.current = newPiece;
+          onMove?.();
           cancelLockTimer();
           lockResetRef.current = 0;
           render();
