@@ -1,22 +1,22 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { TETROMINO_SHAPES, SPAWN_POSITIONS, type TetrominoType } from './assets/tetromino_shapes';
-import { TETROMINO_COLORS, TETROMINO_DARK_COLORS } from './assets/tetromino_colors';
-
-const GRID_WIDTH = 10;
-const GRID_HEIGHT = 20;
-const CELL_SIZE = 30;
-const PREVIEW_CELL_SIZE = 22;
-
-// Movement/feel tuning
-const DAS = 80; // delay before horizontal repeat
-const ARR = 30; // horizontal repeat interval
-const SOFT_DROP_INTERVAL = 60; // soft drop step interval
-const LOCK_DELAY_MS = 450;
-const MAX_LOCK_RESETS = 15;
-
-// Gravity table (ms per row). Clamp to last entry for higher levels.
-const GRAVITY_TABLE = [20, 520, 450, 380, 320, 270, 230, 200, 170, 150, 135, 120, 105, 95, 85];
-const MIN_GRAVITY_MS = 5; // kill-speed floor for very high levels
+import {
+  ARR,
+  CELL_SIZE,
+  DAS,
+  GRAVITY_TABLE,
+  GRID_HEIGHT,
+  GRID_WIDTH,
+  LOCK_DELAY_MS,
+  MAX_LOCK_RESETS,
+  MIN_GRAVITY_MS,
+  PREVIEW_CELL_SIZE,
+  SOFT_DROP_INTERVAL,
+  kicksI,
+  kicksJLSTZ,
+} from './constants';
+import { buildPalette, clamp, type ThemePalette, withAlpha } from './utils';
+import { Pause } from 'lucide-react';
 
 interface TetrisCoreProps {
   startLevel: number;
@@ -45,15 +45,6 @@ interface Tetromino {
   rotation: number;
   x: number;
   y: number;
-}
-
-interface ThemePalette {
-  background: string;
-  grid: string;
-  gridStroke: string;
-  ghost: string;
-  accent: string;
-  pieces: Record<TetrominoType, { fill: string; stroke: string }>;
 }
 
 interface ClearAnimationState {
@@ -89,157 +80,6 @@ interface ShakeAnim {
   duration: number;
   amplitude: number;
 }
-
-const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
-const toHex = (value: number) => `#${value.toString(16).padStart(6, '0')}`;
-
-const parseHsl = (value: string) => {
-  const match = value.replace(/,/g, ' ').match(/hsl[a]?\(\s*([0-9.]+)\s+([0-9.]+)%\s+([0-9.]+)%/i);
-  if (!match) return null;
-  return {
-    h: parseFloat(match[1]),
-    s: parseFloat(match[2]),
-    l: parseFloat(match[3]),
-  };
-};
-
-const withAlpha = (color: string, alpha: number) => {
-  const hsl = parseHsl(color);
-  if (hsl) return `hsla(${hsl.h} ${hsl.s}% ${hsl.l}% / ${alpha})`;
-  const hexMatch = color.match(/^#([a-f0-9]{6}|[a-f0-9]{3})$/i);
-  if (hexMatch) {
-    const hex = hexMatch[1];
-    const nums =
-      hex.length === 3
-        ? hex.split('').map((c) => parseInt(c + c, 16))
-        : [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
-    return `rgba(${nums[0]}, ${nums[1]}, ${nums[2]}, ${alpha})`;
-  }
-  if (color.startsWith('rgb')) {
-    return color.replace('rgb', 'rgba').replace(')', `, ${alpha})`);
-  }
-  return color;
-};
-
-const resolveCssVar = (styles: CSSStyleDeclaration, variable: string, fallback: string, seen: Set<string> = new Set()): string => {
-  if (seen.has(variable)) return fallback;
-  seen.add(variable);
-  const raw = styles.getPropertyValue(variable).trim();
-  if (!raw) return fallback;
-  const varMatch = raw.match(/^var\((--[\w-]+)\)$/);
-  if (varMatch) {
-    return resolveCssVar(styles, varMatch[1], fallback, seen);
-  }
-  if (/^\d/.test(raw) && raw.includes('%')) {
-    return `hsl(${raw})`;
-  }
-  return raw;
-};
-
-const buildPalette = (): ThemePalette => {
-  const basePieces = {
-    I: toHex(TETROMINO_COLORS.I),
-    O: toHex(TETROMINO_COLORS.O),
-    T: toHex(TETROMINO_COLORS.T),
-    S: toHex(TETROMINO_COLORS.S),
-    Z: toHex(TETROMINO_COLORS.Z),
-    J: toHex(TETROMINO_COLORS.J),
-    L: toHex(TETROMINO_COLORS.L),
-  };
-
-  const baseStrokes = {
-    I: toHex(TETROMINO_DARK_COLORS.I),
-    O: toHex(TETROMINO_DARK_COLORS.O),
-    T: toHex(TETROMINO_DARK_COLORS.T),
-    S: toHex(TETROMINO_DARK_COLORS.S),
-    Z: toHex(TETROMINO_DARK_COLORS.Z),
-    J: toHex(TETROMINO_DARK_COLORS.J),
-    L: toHex(TETROMINO_DARK_COLORS.L),
-  };
-
-  if (typeof window === 'undefined') {
-    return {
-      background: '#f9fafb',
-      grid: '#e5e7eb',
-      gridStroke: '#d1d5db',
-      ghost: 'rgba(0,0,0,0.45)',
-      accent: '#111827',
-      pieces: {
-        I: { fill: basePieces.I, stroke: baseStrokes.I },
-        O: { fill: basePieces.O, stroke: baseStrokes.O },
-        T: { fill: basePieces.T, stroke: baseStrokes.T },
-        S: { fill: basePieces.S, stroke: baseStrokes.S },
-        Z: { fill: basePieces.Z, stroke: baseStrokes.Z },
-        J: { fill: basePieces.J, stroke: baseStrokes.J },
-        L: { fill: basePieces.L, stroke: baseStrokes.L },
-      },
-    };
-  }
-
-  const root = document.documentElement;
-  const styles = getComputedStyle(root);
-  const isDark = root.classList.contains('dark');
-
-  const baseFallbacks = isDark
-    ? [basePieces.I, basePieces.S, basePieces.O, basePieces.T, basePieces.Z, basePieces.J, basePieces.L]
-    : [basePieces.I, basePieces.S, basePieces.O, basePieces.T, basePieces.Z, basePieces.J, basePieces.L];
-
-  const primary = resolveCssVar(styles, '--primary', baseFallbacks[5]);
-
-  const palette: ThemePalette = {
-    background: resolveCssVar(styles, '--card', isDark ? '#0c1220' : '#f9fafb'),
-    grid: resolveCssVar(styles, '--game-bg', isDark ? '#0f172a' : '#e5e7eb'),
-    gridStroke: resolveCssVar(styles, '--game-border', isDark ? '#0b1324' : '#d1d5db'),
-    ghost: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.45)',
-    accent: primary,
-    pieces: {
-      I: { fill: basePieces.I, stroke: baseStrokes.I },
-      O: { fill: basePieces.O, stroke: baseStrokes.O },
-      T: { fill: basePieces.T, stroke: baseStrokes.T },
-      S: { fill: basePieces.S, stroke: baseStrokes.S },
-      Z: { fill: basePieces.Z, stroke: baseStrokes.Z },
-      J: { fill: basePieces.J, stroke: baseStrokes.J },
-      L: { fill: basePieces.L, stroke: baseStrokes.L },
-    },
-  };
-
-  return palette;
-};
-
-// SRS-like kick tables (simplified) for JLSTZ and I pieces
-const kicksJLSTZ = [
-  [
-    { x: 0, y: 0 },
-    { x: -1, y: 0 },
-    { x: -1, y: 1 },
-    { x: 0, y: -2 },
-    { x: -1, y: -2 },
-  ],
-  [
-    { x: 0, y: 0 },
-    { x: 1, y: 0 },
-    { x: 1, y: -1 },
-    { x: 0, y: 2 },
-    { x: 1, y: 2 },
-  ],
-];
-
-const kicksI = [
-  [
-    { x: 0, y: 0 },
-    { x: -2, y: 0 },
-    { x: 1, y: 0 },
-    { x: -2, y: -1 },
-    { x: 1, y: 2 },
-  ],
-  [
-    { x: 0, y: 0 },
-    { x: 2, y: 0 },
-    { x: -1, y: 0 },
-    { x: 2, y: 1 },
-    { x: -1, y: -2 },
-  ],
-];
 
 export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
   ({ startLevel, onScoreChange, onLinesChange, onLevelChange, onGameOver, onGameRestart, onStateChange }, ref) => {
@@ -670,12 +510,23 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       if (anim.isTetris) {
         const width = GRID_WIDTH * CELL_SIZE;
         const height = GRID_HEIGHT * CELL_SIZE;
-        ctx.globalAlpha = 0.18 * (1 - progress);
-        const gradient = ctx.createRadialGradient(width / 2, height / 2, 20, width / 2, height / 2, width);
-        gradient.addColorStop(0, withAlpha(palette.accent, 0.6));
-        gradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, width, height);
+        const bandHeight = height * 0.6;
+        const bandTop = -bandHeight + progress * (height + bandHeight);
+        const bandBottom = bandTop + bandHeight;
+        const rainbow = ctx.createLinearGradient(0, bandTop, 0, bandBottom);
+        rainbow.addColorStop(0, '#ff4d4f');
+        rainbow.addColorStop(0.2, '#ffbe0b');
+        rainbow.addColorStop(0.4, '#3ae374');
+        rainbow.addColorStop(0.6, '#2ac3ff');
+        rainbow.addColorStop(0.8, '#7c3aed');
+        rainbow.addColorStop(1, '#ff4d4f');
+
+        ctx.save();
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = rainbow;
+        ctx.globalAlpha = 0.9 * (1 - progress * 0.6);
+        ctx.strokeRect(4, 4, width - 8, height - 8);
+        ctx.restore();
       }
 
       ctx.restore();
@@ -1054,11 +905,21 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       },
       resumeGame: resumeInternal,
       moveLeft: (pressed = true) => {
-        if (!pressed) return;
-        if (!currentPieceRef.current || !isPlayingRef.current || clearAnimationRef.current) return;
+        if (!isPlayingRef.current) return;
+        if (!pressed) {
+          leftPressedRef.current = false;
+          lastHorizontalPressRef.current = 0;
+          lastAutoShiftRef.current = 0;
+          return;
+        }
+        leftPressedRef.current = true;
+        rightPressedRef.current = false;
+        if (!currentPieceRef.current || clearAnimationRef.current) return;
         const now = performance.now();
         if (now - lastManualTapRef.current < 70) return;
         lastManualTapRef.current = now;
+        lastHorizontalPressRef.current = now;
+        lastAutoShiftRef.current = now;
         const newPiece = {
           ...currentPieceRef.current,
           x: currentPieceRef.current.x - 1,
@@ -1071,11 +932,21 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         }
       },
       moveRight: (pressed = true) => {
-        if (!pressed) return;
-        if (!currentPieceRef.current || !isPlayingRef.current || clearAnimationRef.current) return;
+        if (!isPlayingRef.current) return;
+        if (!pressed) {
+          rightPressedRef.current = false;
+          lastHorizontalPressRef.current = 0;
+          lastAutoShiftRef.current = 0;
+          return;
+        }
+        rightPressedRef.current = true;
+        leftPressedRef.current = false;
+        if (!currentPieceRef.current || clearAnimationRef.current) return;
         const now = performance.now();
         if (now - lastManualTapRef.current < 70) return;
         lastManualTapRef.current = now;
+        lastHorizontalPressRef.current = now;
+        lastAutoShiftRef.current = now;
         const newPiece = {
           ...currentPieceRef.current,
           x: currentPieceRef.current.x + 1,
@@ -1088,8 +959,13 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         }
       },
       moveDown: (pressed = true) => {
-        if (!pressed) return;
-        if (!currentPieceRef.current || !isPlayingRef.current || clearAnimationRef.current) return;
+        if (!isPlayingRef.current) return;
+        if (!pressed) {
+          downPressedRef.current = false;
+          return;
+        }
+        downPressedRef.current = true;
+        if (!currentPieceRef.current || clearAnimationRef.current) return;
         if (moveDown()) {
           render();
         }
@@ -1247,10 +1123,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
             <div className='absolute inset-0 flex items-center justify-center'>
               <div className='flex flex-col items-center gap-3 rounded-xl border border-border bg-background/85 backdrop-blur-sm px-4 py-3 shadow-lg'>
                 <div className='flex items-center gap-2 text-foreground/80'>
-                  <div className='flex items-center gap-1'>
-                    <span className='inline-block h-7 w-2 rounded bg-foreground/90' />
-                    <span className='inline-block h-7 w-2 rounded bg-foreground/60' />
-                  </div>
+                  <Pause size={24} className='text-foreground/60' />
                   <span className='text-sm font-semibold uppercase tracking-wide'>Paused</span>
                 </div>
                 <div className='text-xs font-medium text-muted-foreground'>
