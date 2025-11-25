@@ -3,12 +3,11 @@ import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface GameLayoutProps {
-  title: string
   children: React.ReactNode
   controls?: React.ReactNode
 }
 
-export function GameLayout({ title, children, controls }: GameLayoutProps) {
+export function GameLayout({ children, controls }: GameLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8 px-4 max-w-5xl">
@@ -19,7 +18,6 @@ export function GameLayout({ title, children, controls }: GameLayoutProps) {
                 <ArrowLeft className="h-6 w-6" />
               </Link>
             </Button>
-            <div className="text-xl">{title}</div>
           </div>
           {controls && (
             <div className="flex items-center gap-2">{controls}</div>

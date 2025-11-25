@@ -171,7 +171,6 @@ export function MinesweeperGame() {
 
   return (
     <GameLayout
-      title={t('games.titles.minesweeper')}
       controls={
         <div className="flex items-center gap-4">
           <div className="bg-muted px-4 py-2 rounded-md flex items-center gap-2">

@@ -11,6 +11,23 @@ export function Navbar() {
   const router = useRouterState()
   const isDetailPage = router.location.pathname.startsWith('/prophets/')
 
+  // Check if we're on a game page and extract game name
+  const isGamePage = router.location.pathname.startsWith('/games/')
+  const gameName = isGamePage
+    ? router.location.pathname.split('/games/')[1]
+    : null
+
+  // Map route names to translation keys
+  const gameNameMap: Record<string, string> = {
+    snake: t('games.titles.snake'),
+    tetris: t('games.titles.tetris'),
+    pacman: t('games.titles.pacman'),
+    'game-2048': t('games.titles.2048'),
+    minesweeper: t('games.titles.minesweeper'),
+    pong: t('games.titles.pong'),
+    breakout: t('games.titles.breakout'),
+  }
+
   return (
     <header className="lg:sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -21,7 +38,15 @@ export function Navbar() {
           >
             <Ryqo className="h-8 w-8" />
             <span className="text-lg sm:text-xl font-semibold text-foreground">
-              {t('navbar.title')}
+              {isGamePage && gameName ? (
+                <>
+                  {t('navbar.title')}
+                  <span className="text-foreground">/</span>
+                  {gameNameMap[gameName] || gameName}
+                </>
+              ) : (
+                t('navbar.title')
+              )}
             </span>
           </Link>
 

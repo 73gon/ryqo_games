@@ -224,7 +224,6 @@ export function Game2048() {
 
   return (
     <GameLayout
-      title={t('games.titles.2048')}
       controls={
         <div className="flex items-center gap-4">
           <div className="bg-muted px-4 py-2 rounded-md">

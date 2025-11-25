@@ -341,7 +341,7 @@ export function SnakeGame({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <GameLayout title={t('games.titles.snake')} controls={controls}>
+    <GameLayout controls={controls}>
       {content}
     </GameLayout>
   )
