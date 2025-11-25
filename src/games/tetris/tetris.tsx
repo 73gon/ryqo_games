@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { GameLayout } from '@/components/GameLayout'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,22 @@ import { Play, RotateCcw, Pause } from 'lucide-react'
 import { Kbd } from '@/components/ui/kbd'
 import { TetrisCore, type TetrisGameHandle } from './tetris_core'
 import ElectricBorder from '@/components/ElectricBorder'
+import { Input } from '@/components/ui/input'
+import {
+  supabaseClient,
+  hasSupabaseConfig,
+  LEADERBOARD_TABLE,
+  type TetrisScoreRow,
+} from '@/lib/supabaseClient'
+
+const getCurrentWeekStartIso = () => {
+  const now = new Date()
+  const day = now.getUTCDay()
+  const daysSinceMonday = day === 0 ? 6 : day - 1
+  now.setUTCHours(0, 0, 0, 0)
+  now.setUTCDate(now.getUTCDate() - daysSinceMonday)
+  return now.toISOString()
+}
 
 export function TetrisGame() {
   const { t } = useTranslation()
@@ -23,29 +39,67 @@ export function TetrisGame() {
     const parsed = saved ? parseInt(saved, 10) : 1
     return Number.isNaN(parsed) ? 1 : Math.min(Math.max(parsed, 1), 15)
   })
-  const [highScore, setHighScore] = useState<number>(() => {
-    const saved = localStorage.getItem('tetrisHighScore')
-    return saved ? parseInt(saved, 10) : 0
-  })
-  const [highScores, setHighScores] = useState<number[]>(() => {
-    const saved = localStorage.getItem('tetrisHighScores')
-    try {
-      return saved ? JSON.parse(saved) : []
-    } catch {
-      return []
+  const [leaderboard, setLeaderboard] = useState<TetrisScoreRow[]>([])
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false)
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null)
+  const [playerName, setPlayerName] = useState('')
+  const [pendingScore, setPendingScore] = useState<number | null>(null)
+  const [submittingScore, setSubmittingScore] = useState(false)
+  const [lastSubmittedId, setLastSubmittedId] = useState<string | null>(null)
+  const supabase = supabaseClient
+  const weekStartLabel = useMemo(() => {
+    const weekStart = new Date(getCurrentWeekStartIso())
+    return weekStart.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    })
+  }, [])
+
+  const fetchLeaderboard = useCallback(async () => {
+    if (!supabase) {
+      setLeaderboardError(
+        'Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to enable the leaderboard.',
+      )
+      setLeaderboard([])
+      return
     }
-  })
-  const [lastAddedScoreIndex, setLastAddedScoreIndex] = useState<number | null>(
-    null,
-  )
+    setLeaderboardLoading(true)
+    setLeaderboardError(null)
+    const weekStartIso = getCurrentWeekStartIso()
+    const { data, error } = await supabase
+      .from(LEADERBOARD_TABLE)
+      .select('id, name, score, created_at')
+      .gte('created_at', weekStartIso)
+      .order('score', { ascending: false })
+      .order('created_at', { ascending: true })
+      .limit(10)
+
+    if (error) {
+      setLeaderboardError(error.message)
+      setLeaderboard([])
+    } else {
+      setLeaderboard(data ?? [])
+    }
+    setLeaderboardLoading(false)
+  }, [supabase])
+
+  const resetGameState = () => {
+    setGameOver(false)
+    setScore(0)
+    scoreRef.current = 0
+    setLines(0)
+    setLevel(startLevel)
+    setPlayerName('')
+    setPendingScore(null)
+    setLastSubmittedId(null)
+    setLeaderboardError(null)
+    setSubmittingScore(false)
+  }
 
   const handleScoreChange = (newScore: number) => {
     setScore(newScore)
     scoreRef.current = newScore
-    if (newScore > highScore) {
-      setHighScore(newScore)
-      localStorage.setItem('tetrisHighScore', newScore.toString())
-    }
   }
 
   const handleLinesChange = (newLines: number) => {
@@ -60,44 +114,47 @@ export function TetrisGame() {
     hasStartedRef.current = false
     setGameOver(true)
     setIsPlaying(false)
-
     const currentScore = scoreRef.current
-    if (currentScore > 0) {
-      const savedScores = localStorage.getItem('tetrisHighScores')
-      const currentHighScores = savedScores ? JSON.parse(savedScores) : []
-      const allScores = [...currentHighScores, currentScore].sort(
-        (a, b) => b - a,
-      )
-      const newHighScores = allScores.slice(0, 10)
-
-      const oldLength = currentHighScores.length
-      const madeIt =
-        newHighScores.length > oldLength ||
-        (oldLength === 10 && currentScore >= newHighScores[9])
-
-      if (madeIt) {
-        const addedIndex = newHighScores.findIndex((s, idx) => {
-          const countBefore = currentHighScores.filter(
-            (hs: number) => hs === s,
-          ).length
-          const countAfter = newHighScores
-            .slice(0, idx + 1)
-            .filter((hs: number) => hs === s).length
-          return s === currentScore && countAfter > countBefore
-        })
-        setLastAddedScoreIndex(
-          addedIndex >= 0 ? addedIndex : newHighScores.indexOf(currentScore),
-        )
-        setHighScores(newHighScores)
-        localStorage.setItem('tetrisHighScores', JSON.stringify(newHighScores))
-      } else {
-        setLastAddedScoreIndex(null)
-      }
-    }
+    setPendingScore(currentScore > 0 ? currentScore : null)
+    setLastSubmittedId(null)
   }
 
   const handleStateChange = (playing: boolean) => {
     setIsPlaying(playing)
+  }
+
+  const handleSubmitScore = async () => {
+    if (!pendingScore || submittingScore) return
+    const trimmedName = playerName.trim()
+    if (!trimmedName) {
+      setLeaderboardError('Please enter a name to submit your score.')
+      return
+    }
+    if (!supabase) {
+      setLeaderboardError(
+        'Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY.',
+      )
+      return
+    }
+
+    setSubmittingScore(true)
+    setLeaderboardError(null)
+
+    const sanitizedName = trimmedName.slice(0, 24)
+    const { data, error } = await supabase
+      .from(LEADERBOARD_TABLE)
+      .insert({ name: sanitizedName, score: pendingScore })
+      .select('id')
+      .single()
+
+    if (error) {
+      setLeaderboardError(error.message)
+    } else {
+      setLastSubmittedId(data?.id ?? null)
+      setPendingScore(null)
+      fetchLeaderboard()
+    }
+    setSubmittingScore(false)
   }
 
   useEffect(() => {
@@ -105,16 +162,14 @@ export function TetrisGame() {
   }, [startLevel])
 
   useEffect(() => {
+    fetchLeaderboard()
+  }, [fetchLeaderboard])
+
+  useEffect(() => {
     if (!isPlaying && !gameOver && !hasStartedRef.current) {
       setLevel(startLevel)
     }
   }, [startLevel, isPlaying, gameOver])
-
-  const handleClearLeaderboard = () => {
-    setHighScores([])
-    setLastAddedScoreIndex(null)
-    localStorage.removeItem('tetrisHighScores')
-  }
 
   // Keyboard controls
   useEffect(() => {
@@ -134,12 +189,7 @@ export function TetrisGame() {
           e.preventDefault()
           if (gameOver || !hasStartedRef.current) {
             hasStartedRef.current = true
-            setGameOver(false)
-            setScore(0)
-            scoreRef.current = 0
-            setLines(0)
-            setLevel(startLevel)
-            setLastAddedScoreIndex(null)
+            resetGameState()
             gameRef.current?.startGame()
           } else {
             gameRef.current?.resumeGame()
@@ -185,12 +235,7 @@ export function TetrisGame() {
           } else {
             if (gameOver || !hasStartedRef.current) {
               hasStartedRef.current = true
-              setGameOver(false)
-              setScore(0)
-              scoreRef.current = 0
-              setLines(0)
-              setLevel(startLevel)
-              setLastAddedScoreIndex(null)
+              resetGameState()
               gameRef.current?.startGame()
             } else {
               gameRef.current?.resumeGame()
@@ -261,22 +306,12 @@ export function TetrisGame() {
             gameRef.current?.stopGame()
           } else if (gameOver) {
             hasStartedRef.current = true
-            setGameOver(false)
-            setScore(0)
-            scoreRef.current = 0
-            setLines(0)
-            setLevel(startLevel)
-            setLastAddedScoreIndex(null)
+            resetGameState()
             gameRef.current?.startGame()
           } else {
             if (!hasStartedRef.current) {
               hasStartedRef.current = true
-              setGameOver(false)
-              setScore(0)
-              scoreRef.current = 0
-              setLines(0)
-              setLevel(startLevel)
-              setLastAddedScoreIndex(null)
+              resetGameState()
               gameRef.current?.startGame()
             } else {
               gameRef.current?.resumeGame()
@@ -320,12 +355,7 @@ export function TetrisGame() {
             onLevelChange={handleLevelChange}
             onGameOver={handleGameOver}
             onGameRestart={() => {
-              setGameOver(false)
-              setScore(0)
-              scoreRef.current = 0
-              setLines(0)
-              setLevel(startLevel)
-              setLastAddedScoreIndex(null)
+              resetGameState()
             }}
             onStateChange={handleStateChange}
           />
@@ -415,84 +445,139 @@ export function TetrisGame() {
           )}
         </div>
 
-        {highScores.length > 0 && (
-          <div className="w-64 mt-2 shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold uppercase tracking-wide">
-                Leaderboard
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClearLeaderboard}
-                className="h-7 text-xs"
-              >
-                Clear
-              </Button>
-            </div>
-            <div className="space-y-1">
-              {highScores.map((entryScore, index) => {
-                let medalStyle = {}
-                let medalClass = ''
-                if (index === 0) {
-                  medalStyle = {
-                    color: 'var(--medal-gold)',
-                    backgroundColor: 'var(--medal-gold-bg)',
-                  }
-                  medalClass = 'font-bold'
-                } else if (index === 1) {
-                  medalStyle = {
-                    color: 'var(--medal-silver)',
-                    backgroundColor: 'var(--medal-silver-bg)',
-                  }
-                  medalClass = 'font-bold'
-                } else if (index === 2) {
-                  medalStyle = {
-                    color: 'var(--medal-bronze)',
-                    backgroundColor: 'var(--medal-bronze-bg)',
-                  }
-                  medalClass = 'font-bold'
-                }
-
-                const row = (
-                  <div
-                    key={index}
-                    className={`flex justify-between items-center px-4 py-2 rounded-md ${
-                      index < 3 ? '' : 'bg-muted/50'
-                    }`}
-                    style={index < 3 ? medalStyle : {}}
-                  >
-                    <span className={`text-sm font-medium ${medalClass}`}>
-                      #{index + 1}
-                    </span>
-                    <span
-                      className={`font-mono font-bold tabular-nums ${medalClass}`}
-                    >
-                      {entryScore.toString().padStart(6, '0')}
-                    </span>
+        <div className="w-72 mt-2 shrink-0 space-y-3">
+          {pendingScore !== null && (
+            <div className="rounded-md border border-border bg-card p-3 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Submit Score
                   </div>
-                )
-
-                if (index === lastAddedScoreIndex) {
-                  return (
-                    <ElectricBorder
-                      key={index}
-                      color="#7df9ff"
-                      speed={0.5}
-                      chaos={0.2}
-                      thickness={2}
-                      style={{ borderRadius: '0.375rem' }}
-                    >
-                      {row}
-                    </ElectricBorder>
-                  )
-                }
-
-                return row
-              })}
+                  <div className="text-sm text-muted-foreground">
+                    Add your name to this week&apos;s board
+                  </div>
+                </div>
+                <span className="font-mono font-bold tabular-nums text-lg">
+                  {pendingScore.toString().padStart(6, '0')}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="Your name"
+                  maxLength={24}
+                  disabled={submittingScore}
+                />
+                <Button
+                  onClick={handleSubmitScore}
+                  disabled={
+                    submittingScore || !playerName.trim() || !hasSupabaseConfig
+                  }
+                >
+                  {submittingScore ? 'Saving…' : 'Submit'}
+                </Button>
+              </div>
+              {leaderboardError && (
+                <div className="text-xs text-destructive">{leaderboardError}</div>
+              )}
+              {!hasSupabaseConfig && (
+                <div className="text-xs text-amber-600">
+                  Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to enable submissions.
+                </div>
+              )}
             </div>
+          )}
+
+          <div className="rounded-md border border-border bg-card p-3 shadow-sm space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold uppercase tracking-wide">
+                Weekly Leaderboard
+              </h3>
+              <span className="text-[11px] text-muted-foreground">
+                Resets Mondays (UTC)
+              </span>
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              Week of {weekStartLabel}
+            </div>
+
+            {leaderboardLoading ? (
+              <div className="text-xs text-muted-foreground">Loading…</div>
+            ) : leaderboardError ? (
+              <div className="text-xs text-destructive">{leaderboardError}</div>
+            ) : leaderboard.length === 0 ? (
+              <div className="text-xs text-muted-foreground">
+                No scores yet this week. Be the first!
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {leaderboard.map((entry, index) => {
+                  let medalStyle = {}
+                  let medalClass = ''
+                  if (index === 0) {
+                    medalStyle = {
+                      color: 'var(--medal-gold)',
+                      backgroundColor: 'var(--medal-gold-bg)',
+                    }
+                    medalClass = 'font-bold'
+                  } else if (index === 1) {
+                    medalStyle = {
+                      color: 'var(--medal-silver)',
+                      backgroundColor: 'var(--medal-silver-bg)',
+                    }
+                    medalClass = 'font-bold'
+                  } else if (index === 2) {
+                    medalStyle = {
+                      color: 'var(--medal-bronze)',
+                      backgroundColor: 'var(--medal-bronze-bg)',
+                    }
+                    medalClass = 'font-bold'
+                  }
+
+                  const row = (
+                    <div
+                      key={entry.id}
+                      className={`flex justify-between items-center px-4 py-2 rounded-md ${
+                        index < 3 ? '' : 'bg-muted/50'
+                      }`}
+                      style={index < 3 ? medalStyle : {}}
+                    >
+                      <div className={`flex items-center gap-2 ${medalClass}`}>
+                        <span className="text-sm font-medium">#{index + 1}</span>
+                        <span className="text-sm font-semibold truncate max-w-[120px]">
+                          {entry.name || 'Anonymous'}
+                        </span>
+                      </div>
+                      <span
+                        className={`font-mono font-bold tabular-nums ${medalClass}`}
+                      >
+                        {entry.score.toString().padStart(6, '0')}
+                      </span>
+                    </div>
+                  )
+
+                  if (entry.id === lastSubmittedId) {
+                    return (
+                      <ElectricBorder
+                        key={entry.id}
+                        color="#7df9ff"
+                        speed={0.5}
+                        chaos={0.2}
+                        thickness={2}
+                        style={{ borderRadius: '0.375rem' }}
+                      >
+                        {row}
+                      </ElectricBorder>
+                    )
+                  }
+
+                  return row
+                })}
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         <div className="flex-1 max-w-md" />
       </div>
