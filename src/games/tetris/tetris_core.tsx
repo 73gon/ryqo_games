@@ -29,6 +29,10 @@ interface TetrisCoreProps {
   palette?: PaletteName;
   onLineClear?: (linesCleared: number) => void;
   onMove?: () => void;
+  onSoftDrop?: () => void;
+  onHardDrop?: () => void;
+  onRotate?: () => void;
+  onHold?: () => void;
 }
 
 export interface TetrisGameHandle {
@@ -85,7 +89,23 @@ interface ShakeAnim {
 }
 
 export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
-  ({ startLevel, onScoreChange, onLinesChange, onLevelChange, onGameOver, onGameRestart, onStateChange, palette = 'default', onLineClear, onMove }, ref) => {
+  ({
+    startLevel,
+    onScoreChange,
+    onLinesChange,
+    onLevelChange,
+    onGameOver,
+    onGameRestart,
+    onStateChange,
+    palette = 'default',
+    onLineClear,
+    onMove,
+    onSoftDrop,
+    onHardDrop,
+    onRotate,
+    onHold,
+  },
+  ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const previewCanvasRef = useRef<HTMLCanvasElement>(null);
     const holdCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -973,7 +993,9 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         }
         downPressedRef.current = true;
         if (!currentPieceRef.current || clearAnimationRef.current) return;
-        if (moveDown()) {
+        const moved = moveDown();
+        if (moved) {
+          onSoftDrop?.();
           render();
         }
       },
@@ -987,6 +1009,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
           currentPieceRef.current = kicked;
           if (lockResetRef.current < MAX_LOCK_RESETS) lockResetRef.current += 1;
           cancelLockTimer();
+          onRotate?.();
           render();
         }
       },
@@ -995,6 +1018,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         const ghostY = getGhostPosition(currentPieceRef.current);
         currentPieceRef.current = { ...currentPieceRef.current, y: ghostY };
         cancelLockTimer();
+        onHardDrop?.();
         handleLock();
         render();
       },
@@ -1035,6 +1059,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
 
         holdUsedRef.current = true;
         drawPreviewPiece(holdCtxRef.current, holdPieceRef.current);
+        onHold?.();
         render();
       },
     }));

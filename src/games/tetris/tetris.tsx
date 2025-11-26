@@ -127,6 +127,22 @@ export function TetrisGame() {
     getAudio().playSfx('move', 0.4);
   };
 
+  const handleSoftDropSfx = () => {
+    getAudio().playSfx('soft_drop', 0.5);
+  };
+
+  const handleHardDropSfx = () => {
+    getAudio().playSfx('hard_drop', 0.8);
+  };
+
+  const handleRotateSfx = () => {
+    getAudio().playSfx('rotate', 0.6);
+  };
+
+  const handleHoldSfx = () => {
+    getAudio().playSfx('hold', 0.6);
+  };
+
   useEffect(() => {
     if (!isPlaying && !gameOver && !hasStartedRef.current) {
       setLevel(startLevel);
@@ -344,6 +360,10 @@ export function TetrisGame() {
             palette={palette}
             onLineClear={handleLineClearSfx}
             onMove={handleMoveSfx}
+            onSoftDrop={handleSoftDropSfx}
+            onHardDrop={handleHardDropSfx}
+            onRotate={handleRotateSfx}
+            onHold={handleHoldSfx}
           />
 
           <div className='flex flex-col gap-4 w-full max-w-xs'>
