@@ -17,6 +17,7 @@ import {
 } from './constants';
 import { buildPalette, clamp, type ThemePalette, type PaletteName, withAlpha } from './utils';
 import { Pause } from 'lucide-react';
+import { GameOverlay } from './game_overlay';
 
 interface TetrisCoreProps {
   startLevel: number;
@@ -1177,19 +1178,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
             }}
           />
 
-          {isPaused && !gameOverRef.current && (
-            <div className='absolute inset-0 flex items-center justify-center'>
-              <div className='flex flex-col items-center gap-3 rounded-xl border border-border bg-background/85 backdrop-blur-sm px-4 py-3 shadow-lg'>
-                <div className='flex items-center gap-2 text-foreground/80'>
-                  <Pause size={24} className='text-foreground/60' />
-                  <span className='text-sm font-semibold uppercase tracking-wide'>Paused</span>
-                </div>
-                <div className='text-xs font-medium text-muted-foreground'>
-                  Press <span className='font-semibold text-foreground'>Enter</span> to resume
-                </div>
-              </div>
-            </div>
-          )}
+          <GameOverlay isPaused={isPaused} isGameOver={gameOverRef.current} />
         </div>
 
         <div className='flex flex-col gap-3 w-[110px] text-xs text-muted-foreground relative'>
