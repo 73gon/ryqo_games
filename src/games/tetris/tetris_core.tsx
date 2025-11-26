@@ -16,7 +16,6 @@ import {
   kicksJLSTZ,
 } from './constants';
 import { buildPalette, clamp, type ThemePalette, type PaletteName, withAlpha } from './utils';
-import { Pause } from 'lucide-react';
 import { GameOverlay } from './game_overlay';
 
 interface TetrisCoreProps {
