@@ -80,7 +80,7 @@ export const DEFAULT_SFX = {
   line_double: '/audio/line_single.mp3',
   line_triple: '/audio/line_tetris.mp3',
   line_tetris: '/audio/line_tetris.mp3',
-  gameover: '/audio/gameover.wav',
+  gameover: '/audio/gameover.mp3',
   score: '/audio/score.mp3',
   move: '/audio/move.mp3',
 } satisfies Record<SfxName, string>;
