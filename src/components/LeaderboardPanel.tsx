@@ -62,7 +62,7 @@ export function LeaderboardPanel({
 
       <div className='rounded-md border border-border bg-card p-3 shadow-sm space-y-2'>
         <div className='flex items-center justify-between'>
-          <h3 className='text-sm font-bold uppercase tracking-wide'>Weekly Leaderboard</h3>
+          <h3 className='text-sm font-bold tracking-wide uppercase'>Weekly Leaderboard</h3>
         </div>
         <span className='text-[11px] text-muted-foreground'>Resets Mondays (UTC)</span>
         <div className='text-[11px] text-muted-foreground'>Week of {weekStartLabel}</div>

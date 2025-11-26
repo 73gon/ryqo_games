@@ -33,6 +33,7 @@ interface TetrisCoreProps {
   onHardDrop?: () => void;
   onRotate?: () => void;
   onHold?: () => void;
+  sideControl?: React.ReactNode;
 }
 
 export interface TetrisGameHandle {
@@ -89,23 +90,26 @@ interface ShakeAnim {
 }
 
 export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
-  ({
-    startLevel,
-    onScoreChange,
-    onLinesChange,
-    onLevelChange,
-    onGameOver,
-    onGameRestart,
-    onStateChange,
-    palette = 'default',
-    onLineClear,
-    onMove,
-    onSoftDrop,
-    onHardDrop,
-    onRotate,
-    onHold,
-  },
-  ref) => {
+  (
+    {
+      startLevel,
+      onScoreChange,
+      onLinesChange,
+      onLevelChange,
+      onGameOver,
+      onGameRestart,
+      onStateChange,
+      palette = 'default',
+      onLineClear,
+      onMove,
+      onSoftDrop,
+      onHardDrop,
+      onRotate,
+      onHold,
+      sideControl,
+    },
+    ref,
+  ) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const previewCanvasRef = useRef<HTMLCanvasElement>(null);
     const holdCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -1171,7 +1175,7 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
           )}
         </div>
 
-        <div className='flex flex-col gap-3 w-[110px] text-xs text-muted-foreground'>
+        <div className='flex flex-col gap-3 w-[110px] text-xs text-muted-foreground relative'>
           <div className='rounded-md border border-border bg-card p-2 shadow-sm'>
             <div className='text-[11px] font-semibold uppercase tracking-wide text-foreground/80'>Next</div>
             <canvas ref={previewCanvasRef} width={4 * PREVIEW_CELL_SIZE} height={4 * PREVIEW_CELL_SIZE} className='mt-2' />
@@ -1181,6 +1185,8 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
             <div className='text-[11px] font-semibold uppercase tracking-wide text-foreground/80'>Hold</div>
             <canvas ref={holdCanvasRef} width={4 * PREVIEW_CELL_SIZE} height={4 * PREVIEW_CELL_SIZE} className='mt-2' />
           </div>
+
+          {sideControl && <div className='mt-2 flex justify-end'>{sideControl}</div>}
         </div>
       </div>
     );

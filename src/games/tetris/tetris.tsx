@@ -2,13 +2,14 @@ import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { GameLayout } from '@/components/GameLayout';
 import { Button } from '@/components/ui/button';
-import { Play, RotateCcw, Pause } from 'lucide-react';
+import { Play, RotateCcw, Pause, Cog } from 'lucide-react';
 import { Kbd } from '@/components/ui/kbd';
 import { TetrisCore, type TetrisGameHandle } from './tetris_core';
 import { LeaderboardPanel } from '@/components/LeaderboardPanel';
 import { useTetrisLeaderboard } from './hooks/useLeaderboard';
 import type { PaletteName } from './utils';
 import { AudioManager, DEFAULT_MUSIC_SRC, DEFAULT_SFX } from './audioManager';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 export function TetrisGame() {
   const { t } = useTranslation();
@@ -25,14 +26,6 @@ export function TetrisGame() {
     const saved = localStorage.getItem('tetrisPalette');
     const allowed: PaletteName[] = ['default', 'indigo', 'coral', 'mono', 'emerald', 'purple'];
     return allowed.includes(saved as PaletteName) ? (saved as PaletteName) : 'default';
-  });
-  const [musicEnabled, setMusicEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('tetrisMusicEnabled');
-    return saved === null ? true : saved === 'true';
-  });
-  const [sfxEnabled, setSfxEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('tetrisSfxEnabled');
-    return saved === null ? true : saved === 'true';
   });
   const [musicVolume, setMusicVolume] = useState<number>(() => {
     const saved = localStorage.getItem('tetrisMusicVolume');
@@ -73,8 +66,6 @@ export function TetrisGame() {
   const getAudio = () => {
     if (!audioManagerRef.current) {
       audioManagerRef.current = new AudioManager(DEFAULT_MUSIC_SRC, DEFAULT_SFX);
-      audioManagerRef.current.setMusicEnabled(musicEnabled);
-      audioManagerRef.current.setSfxEnabled(sfxEnabled);
       audioManagerRef.current.setMusicVolume(musicVolume);
       audioManagerRef.current.setSfxVolume(sfxVolume);
     }
@@ -110,7 +101,7 @@ export function TetrisGame() {
   const handleStateChange = (playing: boolean) => {
     setIsPlaying(playing);
     if (playing) {
-      if (musicEnabled) getAudio().startMusic();
+      getAudio().startMusic();
     } else {
       getAudio().stopMusic();
     }
@@ -118,8 +109,7 @@ export function TetrisGame() {
 
   const handleLineClearSfx = (linesCleared: number) => {
     if (linesCleared <= 0) return;
-    const name =
-      linesCleared === 4 ? 'line_tetris' : linesCleared === 3 ? 'line_triple' : linesCleared === 2 ? 'line_double' : 'line_single';
+    const name = linesCleared === 4 ? 'line_tetris' : linesCleared === 3 ? 'line_triple' : linesCleared === 2 ? 'line_double' : 'line_single';
     getAudio().playSfx(name as any, 0.9);
   };
 
@@ -154,19 +144,6 @@ export function TetrisGame() {
   }, [palette]);
 
   useEffect(() => {
-    localStorage.setItem('tetrisMusicEnabled', musicEnabled.toString());
-    if (!musicEnabled) {
-      getAudio().stopMusic();
-    } else if (isPlaying) {
-      getAudio().startMusic();
-    }
-  }, [musicEnabled, isPlaying]);
-
-  useEffect(() => {
-    localStorage.setItem('tetrisSfxEnabled', sfxEnabled.toString());
-  }, [sfxEnabled]);
-
-  useEffect(() => {
     getAudio().setMusicVolume(musicVolume);
     localStorage.setItem('tetrisMusicVolume', musicVolume.toString());
   }, [musicVolume]);
@@ -190,10 +167,10 @@ export function TetrisGame() {
             hasStartedRef.current = true;
             resetGameState();
             gameRef.current?.startGame();
-            if (musicEnabled) getAudio().startMusic();
+            getAudio().startMusic();
           } else {
             gameRef.current?.resumeGame();
-            if (musicEnabled) getAudio().startMusic();
+            getAudio().startMusic();
           }
         }
         return;
@@ -205,7 +182,7 @@ export function TetrisGame() {
           if (isPlaying) gameRef.current?.stopGame();
           else {
             gameRef.current?.resumeGame();
-            if (musicEnabled) getAudio().startMusic();
+            getAudio().startMusic();
           }
           break;
         case 'ArrowLeft':
@@ -242,10 +219,10 @@ export function TetrisGame() {
               hasStartedRef.current = true;
               resetGameState();
               gameRef.current?.startGame();
-              if (musicEnabled) getAudio().startMusic();
+              getAudio().startMusic();
             } else {
               gameRef.current?.resumeGame();
-              if (musicEnabled) getAudio().startMusic();
+              getAudio().startMusic();
             }
           }
           break;
@@ -304,16 +281,16 @@ export function TetrisGame() {
             hasStartedRef.current = true;
             resetGameState();
             gameRef.current?.startGame();
-            if (musicEnabled) getAudio().startMusic();
+            getAudio().startMusic();
           } else {
             if (!hasStartedRef.current) {
               hasStartedRef.current = true;
               resetGameState();
               gameRef.current?.startGame();
-              if (musicEnabled) getAudio().startMusic();
+              getAudio().startMusic();
             } else {
               gameRef.current?.resumeGame();
-              if (musicEnabled) getAudio().startMusic();
+              getAudio().startMusic();
             }
           }
         }}
@@ -340,6 +317,74 @@ export function TetrisGame() {
     </div>
   );
 
+  const settingsMenu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant='outline' size='icon' className='h-9 w-9'>
+          <Cog className='h-4 w-4' />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='w-64 space-y-3 p-3'>
+        <DropdownMenuLabel>Settings</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+
+        <div className='space-y-2 px-2'>
+          <div className='flex items-center pt-1'>
+            <span className='text-sm font-medium'>Colors</span>
+          </div>
+          <div className='grid grid-cols-3 gap-2'>
+            {(['default', 'indigo', 'coral', 'mono', 'emerald', 'purple'] as PaletteName[]).map((name) => (
+              <Button
+                key={name}
+                variant={palette === name ? 'default' : 'outline'}
+                size='sm'
+                className='h-8'
+                onClick={() => setPalette(name)}
+                disabled={isPlaying}
+              >
+                {name}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <DropdownMenuSeparator />
+
+        <div className='space-y-2 px-2'>
+          <div className='flex items-center justify-between pt-1'>
+            <span className='text-sm font-medium'>Soundtrack</span>
+            <span className='text-xs text-muted-foreground'>{Math.round(musicVolume * 100)}%</span>
+          </div>
+          <input
+            type='range'
+            min={0}
+            max={1}
+            step={0.01}
+            value={musicVolume}
+            onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
+            className='w-full accent-primary'
+          />
+        </div>
+
+        <div className='space-y-2 px-2'>
+          <div className='flex items-center justify-between'>
+            <span className='text-sm font-medium'>SFX</span>
+            <span className='text-xs text-muted-foreground'>{Math.round(sfxVolume * 100)}%</span>
+          </div>
+          <input
+            type='range'
+            min={0}
+            max={1}
+            step={0.01}
+            value={sfxVolume}
+            onChange={(e) => setSfxVolume(parseFloat(e.target.value))}
+            className='w-full accent-primary'
+          />
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <GameLayout controls={controls}>
       <div className='flex items-start justify-center gap-8 w-full'>
@@ -364,66 +409,8 @@ export function TetrisGame() {
             onHardDrop={handleHardDropSfx}
             onRotate={handleRotateSfx}
             onHold={handleHoldSfx}
+            sideControl={settingsMenu}
           />
-
-          <div className='flex flex-col gap-4 w-full max-w-xs'>
-            <div className='space-y-2'>
-              <div className='flex justify-between'>
-                <label className='text-sm font-medium'>Colors</label>
-                <span className='text-sm text-muted-foreground capitalize'>{palette}</span>
-              </div>
-              <div className='grid grid-cols-3 gap-2'>
-                {(['default', 'indigo', 'coral', 'mono', 'emerald', 'purple'] as PaletteName[]).map((name) => (
-                  <Button
-                    key={name}
-                    variant={palette === name ? 'default' : 'outline'}
-                    size='sm'
-                    className='h-9 capitalize'
-                    onClick={() => setPalette(name)}
-                    disabled={isPlaying}
-                  >
-                    {name}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div className='space-y-2'>
-              <div className='flex justify-between'>
-                <label className='text-sm font-medium'>Soundtrack</label>
-                <Button variant={musicEnabled ? 'default' : 'outline'} size='sm' onClick={() => setMusicEnabled((v) => !v)}>
-                  {musicEnabled ? 'On' : 'Off'}
-                </Button>
-              </div>
-              <input
-                type='range'
-                min={0}
-                max={1}
-                step={0.01}
-                value={musicVolume}
-                onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
-                className='w-full accent-primary'
-              />
-            </div>
-
-            <div className='space-y-2'>
-              <div className='flex justify-between'>
-                <label className='text-sm font-medium'>SFX</label>
-                <Button variant={sfxEnabled ? 'default' : 'outline'} size='sm' onClick={() => setSfxEnabled((v) => !v)}>
-                  {sfxEnabled ? 'On' : 'Off'}
-                </Button>
-              </div>
-              <input
-                type='range'
-                min={0}
-                max={1}
-                step={0.01}
-                value={sfxVolume}
-                onChange={(e) => setSfxVolume(parseFloat(e.target.value))}
-                className='w-full accent-primary'
-              />
-            </div>
-          </div>
 
           <div className='flex flex-col items-center gap-2'>
             <div className='flex items-center gap-2'>
