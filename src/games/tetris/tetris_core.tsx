@@ -188,16 +188,33 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       return bagRef.current.shift() as TetrominoType;
     };
 
+    const hasVisibleCell = (piece: Tetromino): boolean => {
+      const shape = TETROMINO_SHAPES[piece.type][piece.rotation];
+      for (let row = 0; row < shape.length; row++) {
+        for (let col = 0; col < shape[row].length; col++) {
+          if (shape[row][col]) {
+            const gridY = piece.y + row;
+            if (gridY >= 0) return true;
+          }
+        }
+      }
+      return false;
+    };
+
     const createPieceFromType = (type: TetrominoType): Tetromino | null => {
       const spawnPos = SPAWN_POSITIONS[type];
-      const piece: Tetromino = {
-        type,
-        rotation: 0,
-        x: spawnPos.x,
-        y: spawnPos.y,
-      };
-      if (!isValidPosition(piece)) return null;
-      return piece;
+      for (let offset = 0; offset <= 3; offset++) {
+        const candidate: Tetromino = {
+          type,
+          rotation: 0,
+          x: spawnPos.x,
+          y: spawnPos.y - offset,
+        };
+        if (isValidPosition(candidate) && hasVisibleCell(candidate)) {
+          return candidate;
+        }
+      }
+      return null;
     };
 
     const takeNextPiece = (): Tetromino | null => {
