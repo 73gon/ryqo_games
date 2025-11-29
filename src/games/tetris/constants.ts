@@ -16,40 +16,69 @@ export const MAX_LOCK_RESETS = 15
 export const GRAVITY_TABLE = [500, 520, 450, 380, 320, 270, 230, 200, 170, 150, 135, 120, 105, 95, 85]
 export const MIN_GRAVITY_MS = 20 // kill-speed floor for very high levels
 
-// SRS-like kick tables (simplified) for JLSTZ and I pieces
-export const kicksJLSTZ = [
-  [
+// Standard SRS kick tables (clockwise) for JLSTZ and I pieces.
+// Keys are `${from}>${to}` where rotations are 0-3.
+export const kicksJLSTZ: Record<string, { x: number; y: number }[]> = {
+  '0>1': [
     { x: 0, y: 0 },
     { x: -1, y: 0 },
     { x: -1, y: 1 },
     { x: 0, y: -2 },
     { x: -1, y: -2 },
   ],
-  [
+  '1>2': [
     { x: 0, y: 0 },
     { x: 1, y: 0 },
     { x: 1, y: -1 },
     { x: 0, y: 2 },
     { x: 1, y: 2 },
   ],
-]
+  '2>3': [
+    { x: 0, y: 0 },
+    { x: 1, y: 0 },
+    { x: 1, y: 1 },
+    { x: 0, y: -2 },
+    { x: 1, y: -2 },
+  ],
+  '3>0': [
+    { x: 0, y: 0 },
+    { x: -1, y: 0 },
+    { x: -1, y: -1 },
+    { x: 0, y: 2 },
+    { x: -1, y: 2 },
+  ],
+}
 
-export const kicksI = [
-  [
+export const kicksI: Record<string, { x: number; y: number }[]> = {
+  '0>1': [
     { x: 0, y: 0 },
     { x: -2, y: 0 },
     { x: 1, y: 0 },
     { x: -2, y: -1 },
     { x: 1, y: 2 },
   ],
-  [
+  '1>2': [
+    { x: 0, y: 0 },
+    { x: -1, y: 0 },
+    { x: 2, y: 0 },
+    { x: -1, y: 2 },
+    { x: 2, y: -1 },
+  ],
+  '2>3': [
     { x: 0, y: 0 },
     { x: 2, y: 0 },
     { x: -1, y: 0 },
     { x: 2, y: 1 },
     { x: -1, y: -2 },
   ],
-]
+  '3>0': [
+    { x: 0, y: 0 },
+    { x: 1, y: 0 },
+    { x: -2, y: 0 },
+    { x: 1, y: -2 },
+    { x: -2, y: 1 },
+  ],
+}
 
 export const baseColors = {
   pieces: {

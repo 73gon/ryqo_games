@@ -885,9 +885,10 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
     };
 
     const attemptRotate = (piece: Tetromino, newRotation: number): Tetromino | null => {
+      // Standard SRS wall kicks: try offsets that let rotations succeed against walls/stack.
       const kicks = piece.type === 'I' ? kicksI : kicksJLSTZ;
-      const from = piece.rotation % 2;
-      const tests = kicks[from];
+      const key = `${piece.rotation}>${newRotation}`;
+      const tests = kicks[key] ?? [{ x: 0, y: 0 }];
       for (const kick of tests) {
         const candidate = {
           ...piece,
