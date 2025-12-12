@@ -7,6 +7,7 @@ import { COUNTDOWN_SECONDS } from '../constants';
 
 interface UseMultiplayerProps {
   onRaceStart?: () => void;
+  onCountdownStart?: () => void;
   onCountdownTick?: (count: number) => void;
 }
 
@@ -28,7 +29,7 @@ interface UseMultiplayerReturn {
   hasSupabaseConfig: boolean;
 }
 
-export function useMultiplayer({ onRaceStart, onCountdownTick }: UseMultiplayerProps = {}): UseMultiplayerReturn {
+export function useMultiplayer({ onRaceStart, onCountdownStart, onCountdownTick }: UseMultiplayerProps = {}): UseMultiplayerReturn {
   const [playerId] = useState(() => {
     const saved = localStorage.getItem('typeracer_player_id');
     if (saved) return saved;
@@ -48,6 +49,8 @@ export function useMultiplayer({ onRaceStart, onCountdownTick }: UseMultiplayerP
 
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownStartedRef = useRef(false);
+  const raceStartedRef = useRef(false);
 
   const isHost = room?.hostId === playerId;
   const isConnected = !!room;
@@ -62,8 +65,13 @@ export function useMultiplayer({ onRaceStart, onCountdownTick }: UseMultiplayerP
     (updatedRoom: RaceRoom) => {
       setRoom(updatedRoom);
 
-      // Handle countdown start
-      if (updatedRoom.status === 'countdown' && updatedRoom.startTime) {
+      // Handle countdown start - only start once
+      if (updatedRoom.status === 'countdown' && updatedRoom.startTime && !countdownStartedRef.current) {
+        countdownStartedRef.current = true;
+
+        // Notify that countdown is starting (switch to racing screen)
+        onCountdownStart?.();
+
         const startCountdown = () => {
           if (countdownIntervalRef.current) {
             clearInterval(countdownIntervalRef.current);
@@ -74,18 +82,20 @@ export function useMultiplayer({ onRaceStart, onCountdownTick }: UseMultiplayerP
             const timeUntilStart = updatedRoom.startTime! - now;
             const secondsLeft = Math.ceil(timeUntilStart / 1000);
 
-            if (secondsLeft <= 0) {
+            if (secondsLeft <= 0 && !raceStartedRef.current) {
+              raceStartedRef.current = true;
               setCountdown(0);
               onCountdownTick?.(0);
               if (countdownIntervalRef.current) {
                 clearInterval(countdownIntervalRef.current);
+                countdownIntervalRef.current = null;
               }
-              // Small delay before starting
+              // Longer delay to show "GO!" properly (1 second)
               setTimeout(() => {
                 setCountdown(null);
                 onRaceStart?.();
-              }, 500);
-            } else {
+              }, 1000);
+            } else if (secondsLeft > 0) {
               setCountdown(Math.min(secondsLeft, COUNTDOWN_SECONDS));
               onCountdownTick?.(secondsLeft);
             }
@@ -98,7 +108,7 @@ export function useMultiplayer({ onRaceStart, onCountdownTick }: UseMultiplayerP
         startCountdown();
       }
     },
-    [onRaceStart, onCountdownTick],
+    [onRaceStart, onCountdownStart, onCountdownTick],
   );
 
   // Subscribe to room updates when room changes
@@ -205,6 +215,12 @@ export function useMultiplayer({ onRaceStart, onCountdownTick }: UseMultiplayerP
 
   const leaveRoom = useCallback(() => {
     unsubscribeRef.current?.();
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    countdownStartedRef.current = false;
+    raceStartedRef.current = false;
     setRoom(null);
     setCountdown(null);
     setError(null);

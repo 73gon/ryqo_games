@@ -45,7 +45,13 @@ export function TypeRacerGame() {
     leaveRoom,
     hasSupabaseConfig: hasSupabase,
   } = useMultiplayer({
-    onRaceStart: () => setGameMode('racing'),
+    onRaceStart: () => {
+      // Race is ready to begin (countdown finished)
+    },
+    onCountdownStart: () => {
+      // Switch to racing screen when countdown starts
+      setGameMode('racing');
+    },
   });
 
   // Determine the text to use
@@ -267,6 +273,7 @@ export function TypeRacerGame() {
         isHost={isHost}
         onStartRace={handleStartRace}
         isStarting={mpLoading}
+        isCountingDown={countdown !== null}
       />
     );
 

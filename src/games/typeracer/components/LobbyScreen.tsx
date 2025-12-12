@@ -13,9 +13,18 @@ interface LobbyScreenProps {
   isHost: boolean;
   onStartRace: () => void;
   isStarting: boolean;
+  isCountingDown?: boolean;
 }
 
-export const LobbyScreen = memo(function LobbyScreen({ roomId, players, currentPlayerId, isHost, onStartRace, isStarting }: LobbyScreenProps) {
+export const LobbyScreen = memo(function LobbyScreen({
+  roomId,
+  players,
+  currentPlayerId,
+  isHost,
+  onStartRace,
+  isStarting,
+  isCountingDown,
+}: LobbyScreenProps) {
   const [copied, setCopied] = useState(false);
 
   const inviteUrl = `${window.location.origin}${window.location.pathname}?room=${roomId}`;
@@ -75,7 +84,12 @@ export const LobbyScreen = memo(function LobbyScreen({ roomId, players, currentP
       </div>
 
       {/* Waiting message or Start button */}
-      {isHost ? (
+      {isCountingDown ? (
+        <div className='flex flex-col items-center gap-2 py-4'>
+          <Loader2 className='w-8 h-8 animate-spin text-primary' />
+          <div className='text-center text-lg font-medium text-primary animate-pulse'>Get Ready...</div>
+        </div>
+      ) : isHost ? (
         <Button onClick={onStartRace} disabled={players.length < 1 || isStarting} className='w-full gap-2'>
           {isStarting ? <Loader2 className='w-4 h-4 animate-spin' /> : <Play className='w-4 h-4' />}
           {isStarting ? 'Starting...' : 'Start Race'}
