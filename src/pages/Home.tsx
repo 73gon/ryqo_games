@@ -7,6 +7,7 @@ import {
   Bomb,
   RectangleHorizontal,
   LayoutTemplate,
+  Keyboard,
 } from 'lucide-react'
 import {
   Card,
@@ -68,6 +69,13 @@ export function Home() {
       href: '/games/breakout',
       icon: LayoutTemplate,
       type: 'Arcade',
+    },
+    {
+      title: 'TypeRacer',
+      description: 'Test your typing speed in solo or multiplayer races.',
+      href: '/games/typeracer',
+      icon: Keyboard,
+      type: 'Skill',
     },
   ]
 

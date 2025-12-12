@@ -179,6 +179,110 @@
   --game-grid: var(--neutral-500);
   --game-border: var(--neutral-500);
 
+  /* Tetris piece colors - Light mode */
+  --tetris-i: #06b6d4;
+  --tetris-i-dark: #0f7490;
+  --tetris-o: #fbbf24;
+  --tetris-o-dark: #b45309;
+  --tetris-t: #a855f7;
+  --tetris-t-dark: #6b21a8;
+  --tetris-s: #22c55e;
+  --tetris-s-dark: #15803d;
+  --tetris-z: #fb7185;
+  --tetris-z-dark: #be123c;
+  --tetris-j: #3b82f6;
+  --tetris-j-dark: #1d4ed8;
+  --tetris-l: #f97316;
+  --tetris-l-dark: #c2410c;
+  --tetris-ghost: rgba(0, 0, 0, 0.45);
+  --tetris-empty: #f3f4f6;
+  --tetris-grid: #d1d5db;
+
+  /* Tetris palette: Indigo */
+  --tetris-indigo-accent: #6366f1;
+  --tetris-indigo-i: #818cf8;
+  --tetris-indigo-i-dark: #4f46e5;
+  --tetris-indigo-o: #a5b4fc;
+  --tetris-indigo-o-dark: #6366f1;
+  --tetris-indigo-t: #c084fc;
+  --tetris-indigo-t-dark: #7c3aed;
+  --tetris-indigo-s: #22d3ee;
+  --tetris-indigo-s-dark: #0ea5e9;
+  --tetris-indigo-z: #38bdf8;
+  --tetris-indigo-z-dark: #0f9cf5;
+  --tetris-indigo-j: #6366f1;
+  --tetris-indigo-j-dark: #4338ca;
+  --tetris-indigo-l: #4f46e5;
+  --tetris-indigo-l-dark: #312e81;
+
+  /* Tetris palette: Coral */
+  --tetris-coral-accent: #f9735b;
+  --tetris-coral-i: #fb7185;
+  --tetris-coral-i-dark: #c24163;
+  --tetris-coral-o: #fcd34d;
+  --tetris-coral-o-dark: #eab308;
+  --tetris-coral-t: #f472b6;
+  --tetris-coral-t-dark: #db2777;
+  --tetris-coral-s: #f97316;
+  --tetris-coral-s-dark: #c2410c;
+  --tetris-coral-z: #ef4444;
+  --tetris-coral-z-dark: #b91c1c;
+  --tetris-coral-j: #fb923c;
+  --tetris-coral-j-dark: #f97316;
+  --tetris-coral-l: #f59e0b;
+  --tetris-coral-l-dark: #b45309;
+
+  /* Tetris palette: Mono */
+  --tetris-mono-accent: #f5f5f5;
+  --tetris-mono-i: #e5e5e5;
+  --tetris-mono-i-dark: #a3a3a3;
+  --tetris-mono-o: #d4d4d4;
+  --tetris-mono-o-dark: #8a8a8a;
+  --tetris-mono-t: #cfcfcf;
+  --tetris-mono-t-dark: #878787;
+  --tetris-mono-s: #c7c7c7;
+  --tetris-mono-s-dark: #7a7a7a;
+  --tetris-mono-z: #bdbdbd;
+  --tetris-mono-z-dark: #6f6f6f;
+  --tetris-mono-j: #a3a3a3;
+  --tetris-mono-j-dark: #5c5c5c;
+  --tetris-mono-l: #8f8f8f;
+  --tetris-mono-l-dark: #4a4a4a;
+
+  /* Tetris palette: Emerald */
+  --tetris-emerald-accent: #10b981;
+  --tetris-emerald-i: #34d399;
+  --tetris-emerald-i-dark: #0f766e;
+  --tetris-emerald-o: #22d3ee;
+  --tetris-emerald-o-dark: #0891b2;
+  --tetris-emerald-t: #a5b4fc;
+  --tetris-emerald-t-dark: #6366f1;
+  --tetris-emerald-s: #10b981;
+  --tetris-emerald-s-dark: #047857;
+  --tetris-emerald-z: #14b8a6;
+  --tetris-emerald-z-dark: #0f766e;
+  --tetris-emerald-j: #2dd4bf;
+  --tetris-emerald-j-dark: #0d9488;
+  --tetris-emerald-l: #22c55e;
+  --tetris-emerald-l-dark: #15803d;
+
+  /* Tetris palette: Purple */
+  --tetris-purple-accent: #a855f7;
+  --tetris-purple-i: #a855f7;
+  --tetris-purple-i-dark: #7c3aed;
+  --tetris-purple-o: #c084fc;
+  --tetris-purple-o-dark: #8b5cf6;
+  --tetris-purple-t: #e879f9;
+  --tetris-purple-t-dark: #c026d3;
+  --tetris-purple-s: #8b5cf6;
+  --tetris-purple-s-dark: #6d28d9;
+  --tetris-purple-z: #6366f1;
+  --tetris-purple-z-dark: #4338ca;
+  --tetris-purple-j: #7c3aed;
+  --tetris-purple-j-dark: #5b21b6;
+  --tetris-purple-l: #9333ea;
+  --tetris-purple-l-dark: #6b21a8;
+
   /* Medal colors */
   --medal-gold: #ffd700;
   --medal-gold-bg: rgba(255, 215, 0, 0.1);
@@ -226,6 +330,11 @@
   --game-bg: var(--neutral-800);
   --game-grid: var(--neutral-900);
   --game-border: var(--neutral-900);
+
+  /* Tetris piece colors - Dark mode */
+  --tetris-ghost: rgba(255, 255, 255, 0.6);
+  --tetris-empty: #1e293b;
+  --tetris-grid: #334155;
 
   /* Medal colors */
   --medal-gold: #ffed4e;

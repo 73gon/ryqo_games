@@ -4,10 +4,9 @@ import { GameLayout } from '@/components/GameLayout';
 import { Button } from '@/components/ui/button';
 import { Play, RotateCcw, Pause, Cog } from 'lucide-react';
 import { Kbd } from '@/components/ui/kbd';
-import { TetrisCore, type TetrisGameHandle } from './tetris_core';
+import { TetrisCore, type TetrisGameHandle, type PaletteName } from './core';
 import { LeaderboardPanel } from '@/components/LeaderboardPanel';
 import { useTetrisLeaderboard } from './hooks/useLeaderboard';
-import type { PaletteName } from './utils';
 import { AudioManager, DEFAULT_MUSIC_SRC, DEFAULT_SFX } from './audioManager';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GamesTyperacerRouteImport } from './routes/games/typeracer'
 import { Route as GamesTetrisRouteImport } from './routes/games/tetris'
 import { Route as GamesSnakeRouteImport } from './routes/games/snake'
 import { Route as GamesPongRouteImport } from './routes/games/pong'
@@ -21,6 +22,11 @@ import { Route as GamesBreakoutRouteImport } from './routes/games/breakout'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesTyperacerRoute = GamesTyperacerRouteImport.update({
+  id: '/games/typeracer',
+  path: '/games/typeracer',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesTetrisRoute = GamesTetrisRouteImport.update({
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/games/pong': typeof GamesPongRoute
   '/games/snake': typeof GamesSnakeRoute
   '/games/tetris': typeof GamesTetrisRoute
+  '/games/typeracer': typeof GamesTyperacerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/games/pong': typeof GamesPongRoute
   '/games/snake': typeof GamesSnakeRoute
   '/games/tetris': typeof GamesTetrisRoute
+  '/games/typeracer': typeof GamesTyperacerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/games/pong': typeof GamesPongRoute
   '/games/snake': typeof GamesSnakeRoute
   '/games/tetris': typeof GamesTetrisRoute
+  '/games/typeracer': typeof GamesTyperacerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/games/pong'
     | '/games/snake'
     | '/games/tetris'
+    | '/games/typeracer'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/games/pong'
     | '/games/snake'
     | '/games/tetris'
+    | '/games/typeracer'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/games/pong'
     | '/games/snake'
     | '/games/tetris'
+    | '/games/typeracer'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   GamesPongRoute: typeof GamesPongRoute
   GamesSnakeRoute: typeof GamesSnakeRoute
   GamesTetrisRoute: typeof GamesTetrisRoute
+  GamesTyperacerRoute: typeof GamesTyperacerRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/typeracer': {
+      id: '/games/typeracer'
+      path: '/games/typeracer'
+      fullPath: '/games/typeracer'
+      preLoaderRoute: typeof GamesTyperacerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games/tetris': {
@@ -204,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   GamesPongRoute: GamesPongRoute,
   GamesSnakeRoute: GamesSnakeRoute,
   GamesTetrisRoute: GamesTetrisRoute,
+  GamesTyperacerRoute: GamesTyperacerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

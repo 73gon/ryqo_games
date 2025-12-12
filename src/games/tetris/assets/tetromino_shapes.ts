@@ -1,12 +1,9 @@
-// Tetromino shapes with rotation states
-// Each shape is defined as a 2D array where 1 represents a block
+/**
+ * Tetromino shapes with rotation states
+ * Each shape is defined as a 2D array where 1 represents a block
+ */
 
-export type TetrominoType = 'I' | 'O' | 'T' | 'S' | 'Z' | 'J' | 'L'
-
-export interface TetrominoShape {
-  rotations: number[][][]
-  color: string
-}
+import type { TetrominoType } from '../core/types';
 
 export const TETROMINO_SHAPES: Record<TetrominoType, number[][][]> = {
   I: [
@@ -155,13 +152,15 @@ export const TETROMINO_SHAPES: Record<TetrominoType, number[][][]> = {
 }
 
 // Starting positions for each tetromino type
-export const SPAWN_POSITIONS: Record<TetrominoType, { x: number; y: number }> =
-  {
-    I: { x: 3, y: -1 },
-    O: { x: 4, y: 0 },
-    T: { x: 3, y: 0 },
-    S: { x: 3, y: 0 },
-    Z: { x: 3, y: 0 },
-    J: { x: 3, y: 0 },
-    L: { x: 3, y: 0 },
-  }
+export const SPAWN_POSITIONS: Record<TetrominoType, { x: number; y: number }> = {
+  I: { x: 3, y: -1 },
+  O: { x: 4, y: 0 },
+  T: { x: 3, y: 0 },
+  S: { x: 3, y: 0 },
+  Z: { x: 3, y: 0 },
+  J: { x: 3, y: 0 },
+  L: { x: 3, y: 0 },
+};
+
+// Re-export TetrominoType for convenience
+export type { TetrominoType } from '../core/types';
