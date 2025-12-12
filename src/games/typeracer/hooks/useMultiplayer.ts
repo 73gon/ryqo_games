@@ -2,15 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { RaceRoom } from '../types';
-import {
-  generatePlayerId,
-  createRoom,
-  joinRoom,
-  subscribeToRoom,
-  updatePlayerProgress,
-  startRace,
-  hasSupabaseConfig,
-} from '../supabase';
+import { generatePlayerId, createRoom, joinRoom, subscribeToRoom, updatePlayerProgress, startRace, hasSupabaseConfig } from '../supabase';
 import { COUNTDOWN_SECONDS } from '../constants';
 
 interface UseMultiplayerProps {
@@ -36,10 +28,7 @@ interface UseMultiplayerReturn {
   hasSupabaseConfig: boolean;
 }
 
-export function useMultiplayer({
-  onRaceStart,
-  onCountdownTick,
-}: UseMultiplayerProps = {}): UseMultiplayerReturn {
+export function useMultiplayer({ onRaceStart, onCountdownTick }: UseMultiplayerProps = {}): UseMultiplayerReturn {
   const [playerId] = useState(() => {
     const saved = localStorage.getItem('typeracer_player_id');
     if (saved) return saved;
@@ -47,16 +36,16 @@ export function useMultiplayer({
     localStorage.setItem('typeracer_player_id', newId);
     return newId;
   });
-  
+
   const [playerName, setPlayerName] = useState(() => {
     return localStorage.getItem('typeracer_player_name') || `Player${Math.floor(Math.random() * 1000)}`;
   });
-  
+
   const [room, setRoom] = useState<RaceRoom | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
-  
+
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -69,45 +58,48 @@ export function useMultiplayer({
   }, [playerName]);
 
   // Handle room updates
-  const handleRoomUpdate = useCallback((updatedRoom: RaceRoom) => {
-    setRoom(updatedRoom);
+  const handleRoomUpdate = useCallback(
+    (updatedRoom: RaceRoom) => {
+      setRoom(updatedRoom);
 
-    // Handle countdown start
-    if (updatedRoom.status === 'countdown' && updatedRoom.startTime) {
-      const startCountdown = () => {
-        if (countdownIntervalRef.current) {
-          clearInterval(countdownIntervalRef.current);
-        }
-
-        const tick = () => {
-          const now = Date.now();
-          const timeUntilStart = updatedRoom.startTime! - now;
-          const secondsLeft = Math.ceil(timeUntilStart / 1000);
-
-          if (secondsLeft <= 0) {
-            setCountdown(0);
-            onCountdownTick?.(0);
-            if (countdownIntervalRef.current) {
-              clearInterval(countdownIntervalRef.current);
-            }
-            // Small delay before starting
-            setTimeout(() => {
-              setCountdown(null);
-              onRaceStart?.();
-            }, 500);
-          } else {
-            setCountdown(Math.min(secondsLeft, COUNTDOWN_SECONDS));
-            onCountdownTick?.(secondsLeft);
+      // Handle countdown start
+      if (updatedRoom.status === 'countdown' && updatedRoom.startTime) {
+        const startCountdown = () => {
+          if (countdownIntervalRef.current) {
+            clearInterval(countdownIntervalRef.current);
           }
+
+          const tick = () => {
+            const now = Date.now();
+            const timeUntilStart = updatedRoom.startTime! - now;
+            const secondsLeft = Math.ceil(timeUntilStart / 1000);
+
+            if (secondsLeft <= 0) {
+              setCountdown(0);
+              onCountdownTick?.(0);
+              if (countdownIntervalRef.current) {
+                clearInterval(countdownIntervalRef.current);
+              }
+              // Small delay before starting
+              setTimeout(() => {
+                setCountdown(null);
+                onRaceStart?.();
+              }, 500);
+            } else {
+              setCountdown(Math.min(secondsLeft, COUNTDOWN_SECONDS));
+              onCountdownTick?.(secondsLeft);
+            }
+          };
+
+          tick();
+          countdownIntervalRef.current = setInterval(tick, 100);
         };
 
-        tick();
-        countdownIntervalRef.current = setInterval(tick, 100);
-      };
-
-      startCountdown();
-    }
-  }, [onRaceStart, onCountdownTick]);
+        startCountdown();
+      }
+    },
+    [onRaceStart, onCountdownTick],
+  );
 
   // Subscribe to room updates when room changes
   useEffect(() => {
@@ -156,31 +148,34 @@ export function useMultiplayer({
     }
   }, [playerId, playerName]);
 
-  const joinExistingRoom = useCallback(async (roomId: string): Promise<boolean> => {
-    if (!hasSupabaseConfig) {
-      setError('Multiplayer requires Supabase configuration');
-      return false;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const joinedRoom = await joinRoom(roomId, playerId, playerName);
-      if (joinedRoom) {
-        setRoom(joinedRoom);
-        return true;
-      } else {
-        setError('Room not found or race already started');
+  const joinExistingRoom = useCallback(
+    async (roomId: string): Promise<boolean> => {
+      if (!hasSupabaseConfig) {
+        setError('Multiplayer requires Supabase configuration');
         return false;
       }
-    } catch (err) {
-      setError('Error joining room');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [playerId, playerName]);
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const joinedRoom = await joinRoom(roomId, playerId, playerName);
+        if (joinedRoom) {
+          setRoom(joinedRoom);
+          return true;
+        } else {
+          setError('Room not found or race already started');
+          return false;
+        }
+      } catch (err) {
+        setError('Error joining room');
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [playerId, playerName],
+  );
 
   const startTheRace = useCallback(async (): Promise<boolean> => {
     if (!room || !isHost) return false;
@@ -200,15 +195,13 @@ export function useMultiplayer({
     }
   }, [room, isHost]);
 
-  const updateProgress = useCallback((
-    progress: number,
-    wpm: number,
-    accuracy: number,
-    finished: boolean
-  ) => {
-    if (!room) return;
-    updatePlayerProgress(room.id, playerId, progress, wpm, accuracy, finished);
-  }, [room, playerId]);
+  const updateProgress = useCallback(
+    (progress: number, wpm: number, accuracy: number, finished: boolean) => {
+      if (!room) return;
+      updatePlayerProgress(room.id, playerId, progress, wpm, accuracy, finished);
+    },
+    [room, playerId],
+  );
 
   const leaveRoom = useCallback(() => {
     unsubscribeRef.current?.();

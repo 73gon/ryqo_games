@@ -38,27 +38,27 @@ export async function createRoom(hostId: string, hostName: string): Promise<Race
     hostId,
     text,
     status: 'waiting',
-    players: [{
-      id: hostId,
-      name: hostName,
-      progress: 0,
-      wpm: 0,
-      accuracy: 100,
-      finished: false,
-    }],
+    players: [
+      {
+        id: hostId,
+        name: hostName,
+        progress: 0,
+        wpm: 0,
+        accuracy: 100,
+        finished: false,
+      },
+    ],
     createdAt: Date.now(),
   };
 
-  const { error } = await supabaseClient
-    .from(ROOMS_TABLE)
-    .insert({
-      id: roomId,
-      host_id: hostId,
-      text,
-      status: 'waiting',
-      players: room.players,
-      created_at: new Date(room.createdAt).toISOString(),
-    });
+  const { error } = await supabaseClient.from(ROOMS_TABLE).insert({
+    id: roomId,
+    host_id: hostId,
+    text,
+    status: 'waiting',
+    players: room.players,
+    created_at: new Date(room.createdAt).toISOString(),
+  });
 
   if (error) {
     console.error('Error creating room:', error);
@@ -73,11 +73,7 @@ export async function joinRoom(roomId: string, playerId: string, playerName: str
   if (!supabaseClient || !hasSupabaseConfig) return null;
 
   // First get the current room
-  const { data: roomData, error: fetchError } = await supabaseClient
-    .from(ROOMS_TABLE)
-    .select('*')
-    .eq('id', roomId.toUpperCase())
-    .single();
+  const { data: roomData, error: fetchError } = await supabaseClient.from(ROOMS_TABLE).select('*').eq('id', roomId.toUpperCase()).single();
 
   if (fetchError || !roomData) {
     console.error('Error fetching room:', fetchError);
@@ -90,9 +86,9 @@ export async function joinRoom(roomId: string, playerId: string, playerName: str
   }
 
   const players: Player[] = roomData.players || [];
-  
+
   // Check if player already in room
-  if (!players.find(p => p.id === playerId)) {
+  if (!players.find((p) => p.id === playerId)) {
     players.push({
       id: playerId,
       name: playerName,
@@ -102,10 +98,7 @@ export async function joinRoom(roomId: string, playerId: string, playerName: str
       finished: false,
     });
 
-    const { error: updateError } = await supabaseClient
-      .from(ROOMS_TABLE)
-      .update({ players })
-      .eq('id', roomId.toUpperCase());
+    const { error: updateError } = await supabaseClient.from(ROOMS_TABLE).update({ players }).eq('id', roomId.toUpperCase());
 
     if (updateError) {
       console.error('Error joining room:', updateError);
@@ -131,21 +124,17 @@ export async function updatePlayerProgress(
   progress: number,
   wpm: number,
   accuracy: number,
-  finished: boolean
+  finished: boolean,
 ): Promise<void> {
   if (!supabaseClient || !hasSupabaseConfig) return;
 
-  const { data: roomData, error: fetchError } = await supabaseClient
-    .from(ROOMS_TABLE)
-    .select('players')
-    .eq('id', roomId)
-    .single();
+  const { data: roomData, error: fetchError } = await supabaseClient.from(ROOMS_TABLE).select('players').eq('id', roomId).single();
 
   if (fetchError || !roomData) return;
 
   const players: Player[] = roomData.players || [];
-  const playerIndex = players.findIndex(p => p.id === playerId);
-  
+  const playerIndex = players.findIndex((p) => p.id === playerId);
+
   if (playerIndex >= 0) {
     players[playerIndex] = {
       ...players[playerIndex],
@@ -156,10 +145,7 @@ export async function updatePlayerProgress(
       finishedAt: finished ? Date.now() : undefined,
     };
 
-    await supabaseClient
-      .from(ROOMS_TABLE)
-      .update({ players })
-      .eq('id', roomId);
+    await supabaseClient.from(ROOMS_TABLE).update({ players }).eq('id', roomId);
   }
 }
 
@@ -169,7 +155,7 @@ export async function startRace(roomId: string): Promise<boolean> {
 
   const { error } = await supabaseClient
     .from(ROOMS_TABLE)
-    .update({ 
+    .update({
       status: 'countdown',
       start_time: new Date(Date.now() + 3000).toISOString(),
     })
@@ -179,10 +165,7 @@ export async function startRace(roomId: string): Promise<boolean> {
 }
 
 // Subscribe to room updates
-export function subscribeToRoom(
-  roomId: string,
-  onUpdate: (room: RaceRoom) => void
-): (() => void) | null {
+export function subscribeToRoom(roomId: string, onUpdate: (room: RaceRoom) => void): (() => void) | null {
   if (!supabaseClient || !hasSupabaseConfig) return null;
 
   const channel = supabaseClient
@@ -208,7 +191,7 @@ export function subscribeToRoom(
             createdAt: new Date(data.created_at).getTime(),
           });
         }
-      }
+      },
     )
     .subscribe();
 
@@ -221,11 +204,7 @@ export function subscribeToRoom(
 export async function getRoom(roomId: string): Promise<RaceRoom | null> {
   if (!supabaseClient || !hasSupabaseConfig) return null;
 
-  const { data, error } = await supabaseClient
-    .from(ROOMS_TABLE)
-    .select('*')
-    .eq('id', roomId.toUpperCase())
-    .single();
+  const { data, error } = await supabaseClient.from(ROOMS_TABLE).select('*').eq('id', roomId.toUpperCase()).single();
 
   if (error || !data) return null;
 
@@ -244,10 +223,7 @@ export async function getRoom(roomId: string): Promise<RaceRoom | null> {
 export async function updateRoomStatus(roomId: string, status: RaceRoom['status']): Promise<void> {
   if (!supabaseClient || !hasSupabaseConfig) return;
 
-  await supabaseClient
-    .from(ROOMS_TABLE)
-    .update({ status })
-    .eq('id', roomId);
+  await supabaseClient.from(ROOMS_TABLE).update({ status }).eq('id', roomId);
 }
 
 export { hasSupabaseConfig };

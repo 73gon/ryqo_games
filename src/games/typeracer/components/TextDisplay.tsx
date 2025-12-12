@@ -8,16 +8,12 @@ interface TextDisplayProps {
   errors: Set<number>;
 }
 
-export const TextDisplay = memo(function TextDisplay({
-  text,
-  currentIndex,
-  errors,
-}: TextDisplayProps) {
+export const TextDisplay = memo(function TextDisplay({ text, currentIndex, errors }: TextDisplayProps) {
   return (
-    <div className="font-mono text-lg leading-relaxed p-4 bg-muted/30 rounded-lg border border-border select-none whitespace-pre-wrap break-words w-full max-w-full overflow-hidden">
+    <div className='font-mono text-lg leading-relaxed p-4 bg-muted/30 rounded-lg border border-border select-none whitespace-pre-wrap break-words w-full max-w-full overflow-hidden'>
       {text.split('').map((char, index) => {
         let className = 'transition-colors duration-75 ';
-        
+
         if (index < currentIndex) {
           if (errors.has(index)) {
             className += 'text-destructive bg-destructive/20';

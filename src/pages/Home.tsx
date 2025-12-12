@@ -1,29 +1,13 @@
-import { Link } from '@tanstack/react-router'
-import {
-  Gamepad2,
-  Grid3x3,
-  Ghost,
-  Hash,
-  Bomb,
-  RectangleHorizontal,
-  LayoutTemplate,
-  Keyboard,
-} from 'lucide-react'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card'
-import SpotlightCard from '@/components/SpotlightCard'
+import { Link } from '@tanstack/react-router';
+import { Gamepad2, Grid3x3, Ghost, Hash, Bomb, RectangleHorizontal, LayoutTemplate, Keyboard } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import SpotlightCard from '@/components/SpotlightCard';
 
 export function Home() {
   const games = [
     {
       title: 'Snake',
-      description:
-        "Classic snake game. Eat apples, grow longer, don't hit the wall.",
+      description: "Classic snake game. Eat apples, grow longer, don't hit the wall.",
       href: '/games/snake',
       icon: Gamepad2,
       type: 'Arcade',
@@ -77,43 +61,34 @@ export function Home() {
       icon: Keyboard,
       type: 'Skill',
     },
-  ]
+  ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto py-12 px-4">
-        <div className="mb-12 text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl mb-4">
-            Mini-Games Hub
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            A collection of classic arcade and puzzle games built with React,
-            PixiJS, and Tailwind CSS.
+    <div className='min-h-screen bg-background'>
+      <div className='container mx-auto py-12 px-4'>
+        <div className='mb-12 text-center'>
+          <h1 className='text-4xl font-extrabold tracking-tight lg:text-5xl mb-4'>Mini-Games Hub</h1>
+          <p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
+            A collection of classic arcade and puzzle games built with React, PixiJS, and Tailwind CSS.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
           {games.map((game) => (
             <Link
               key={game.href}
               to={game.href}
-              className="block transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-xl"
+              className='block transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-xl'
             >
-              <SpotlightCard className="h-full cursor-pointer p-0 rounded-xl">
-                <Card className="h-full bg-transparent border-0 shadow-none">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-xl font-bold">
-                      {game.title}
-                    </CardTitle>
-                    <game.icon className="h-6 w-6 text-muted-foreground" />
+              <SpotlightCard className='h-full cursor-pointer p-0 rounded-xl'>
+                <Card className='h-full bg-transparent border-0 shadow-none'>
+                  <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                    <CardTitle className='text-xl font-bold'>{game.title}</CardTitle>
+                    <game.icon className='h-6 w-6 text-muted-foreground' />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                      {game.type}
-                    </div>
-                    <CardDescription className="text-base">
-                      {game.description}
-                    </CardDescription>
+                    <div className='text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2'>{game.type}</div>
+                    <CardDescription className='text-base'>{game.description}</CardDescription>
                   </CardContent>
                 </Card>
               </SpotlightCard>
@@ -122,5 +97,5 @@ export function Home() {
         </div>
       </div>
     </div>
-  )
+  );
 }
