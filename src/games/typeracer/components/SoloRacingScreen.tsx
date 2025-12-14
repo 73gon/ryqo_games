@@ -4,7 +4,7 @@ import { memo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
-import { ToggleGroup, Toggle as ToggleGroupItem } from '@/components/animate-ui/components/base/toggle-group';
+import { ToggleGroup, Toggle as ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Keyboard as KeyboardIcon, RotateCcw, Clock, FileText, Infinity } from 'lucide-react';
 import { TextDisplay } from './TextDisplay';
 import { Keyboard } from './Keyboard';
@@ -106,7 +106,7 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
           )}
         </div>
         <div className='flex items-center gap-2'>
-          <motion.div className='flex items-center gap-2' layout transition={{ type: 'spring', stiffness: 400, damping: 25 }}>
+          <motion.div className='flex items-center gap-2'>
             {/* Duration toggle - only show in timed mode, on the left */}
             <AnimatePresence mode='popLayout'>
               {soloModeType === 'timed' && (
@@ -114,7 +114,7 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
                   initial={{ opacity: 0, x: 20, scale: 0.9 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: 20, scale: 0.9 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
                 >
                   <ToggleGroup
                     value={[timedDuration.toString()]}
@@ -162,13 +162,6 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
 
       {/* Virtual keyboard */}
       {showKeyboard && <Keyboard pressedKey={pressedKey} lastKeyCorrect={lastKeyCorrect} />}
-
-      {/* Progress indicator - only show in text mode, hide when finished */}
-      {!isTimed && !isEndless && !isFinished && (
-        <div className='h-2 bg-muted rounded-full overflow-hidden'>
-          <div className='h-full bg-primary transition-all duration-150 ease-out' style={{ width: `${progress}%` }} />
-        </div>
-      )}
 
       {/* Finished status panel */}
       {isFinished && (
