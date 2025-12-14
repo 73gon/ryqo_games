@@ -1,4 +1,4 @@
-import ElectricBorder from '@/components/ElectricBorder';
+import ElectricBorder from '@/components/electric-border';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { TetrisScoreRow } from '@/lib/supabaseClient';

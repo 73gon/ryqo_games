@@ -36,7 +36,29 @@ const Car = memo(function Car({ color, isCurrentPlayer }: { color: string; isCur
 });
 
 export const RaceTrack = memo(function RaceTrack({ players, currentPlayerId }: RaceTrackProps) {
-  const sortedPlayers = [...players].sort((a, b) => b.progress - a.progress);
+  // Sort players: finished players by finish time, then by progress
+  const sortedPlayers = [...players].sort((a, b) => {
+    if (a.finished && b.finished) {
+      return (a.finishedAt || 0) - (b.finishedAt || 0);
+    }
+    if (a.finished) return -1;
+    if (b.finished) return 1;
+    return b.progress - a.progress;
+  });
+
+  // Calculate positions for finished players
+  const getPosition = (player: Player): number | null => {
+    if (!player.finished) return null;
+    const finishedPlayers = players.filter((p) => p.finished).sort((a, b) => (a.finishedAt || 0) - (b.finishedAt || 0));
+    return finishedPlayers.findIndex((p) => p.id === player.id) + 1;
+  };
+
+  const getPositionSuffix = (pos: number): string => {
+    if (pos === 1) return 'st';
+    if (pos === 2) return 'nd';
+    if (pos === 3) return 'rd';
+    return 'th';
+  };
 
   return (
     <div className='w-full space-y-2 p-4 bg-muted/20 rounded-lg border border-border'>
@@ -91,7 +113,29 @@ export const RaceTrack = memo(function RaceTrack({ players, currentPlayerId }: R
                 <span className='flex items-center gap-1'>
                   {isCurrentPlayer && <span className='text-primary'>●</span>}
                   {player.name}
-                  {player.finished && <span className='text-green-500 ml-1'>✓</span>}
+                  {player.finished &&
+                    (() => {
+                      const pos = getPosition(player);
+                      if (pos) {
+                        return (
+                          <span
+                            className={`ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                              pos === 1
+                                ? 'bg-yellow-500 text-black'
+                                : pos === 2
+                                  ? 'bg-gray-400 text-black'
+                                  : pos === 3
+                                    ? 'bg-amber-700 text-white'
+                                    : 'bg-muted text-muted-foreground'
+                            }`}
+                          >
+                            {pos}
+                            {getPositionSuffix(pos)}
+                          </span>
+                        );
+                      }
+                      return <span className='text-green-500 ml-1'>✓</span>;
+                    })()}
                 </span>
                 <span>{player.wpm} WPM</span>
               </div>

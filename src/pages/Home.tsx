@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { Gamepad2, Grid3x3, Ghost, Hash, Bomb, RectangleHorizontal, LayoutTemplate, Keyboard } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import SpotlightCard from '@/components/SpotlightCard';
+import SpotlightCard from '@/components/spotlight-card';
 
 export function Home() {
   const games = [
@@ -29,7 +29,7 @@ export function Home() {
     {
       title: '2048',
       description: 'Combine tiles to reach the number 2048.',
-      href: '/games/game-2048',
+      href: '/games/2048',
       icon: Hash,
       type: 'Puzzle',
     },
@@ -64,7 +64,7 @@ export function Home() {
   ];
 
   return (
-    <div className='min-h-screen bg-background'>
+    <div className='bg-background'>
       <div className='container mx-auto py-12 px-4'>
         <div className='mb-12 text-center'>
           <h1 className='text-4xl font-extrabold tracking-tight lg:text-5xl mb-4'>Mini-Games Hub</h1>

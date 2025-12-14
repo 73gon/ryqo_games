@@ -18,6 +18,17 @@ export interface RaceRoom {
   startTime?: number;
   players: Player[];
   createdAt: number;
+  withPunctuation?: boolean;
+}
+
+// Solo mode settings
+export type SoloModeType = 'text' | 'timed' | 'endless';
+export type TimeDuration = 15 | 30;
+
+export interface SoloSettings {
+  mode: SoloModeType;
+  duration: TimeDuration;
+  withPunctuation: boolean;
 }
 
 export interface GameStats {

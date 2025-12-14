@@ -1,14 +1,15 @@
 import { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { GameLayout } from '@/components/GameLayout';
+import { GameLayout } from '@/components/game-layout';
 import { Button } from '@/components/ui/button';
 import { Play, RotateCcw, Pause, Cog } from 'lucide-react';
 import { Kbd } from '@/components/ui/kbd';
 import { TetrisCore, type TetrisGameHandle, type PaletteName } from './core';
-import { LeaderboardPanel } from '@/components/LeaderboardPanel';
+import { LeaderboardSheet } from './components/LeaderboardSheet';
 import { useTetrisLeaderboard } from './hooks/useLeaderboard';
 import { AudioManager, DEFAULT_MUSIC_SRC, DEFAULT_SFX } from './audioManager';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger, DropdownMenuLabel, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { CELL_SIZE_OPTIONS, SENSITIVITY_PRESETS, type CellSizeOption, type SensitivityOption } from './core/constants';
 
 export function TetrisGame() {
   const { t } = useTranslation();
@@ -26,6 +27,14 @@ export function TetrisGame() {
     const allowed: PaletteName[] = ['default', 'indigo', 'coral', 'mono', 'emerald', 'purple'];
     return allowed.includes(saved as PaletteName) ? (saved as PaletteName) : 'default';
   });
+  const [cellSize, setCellSize] = useState<CellSizeOption>(() => {
+    const saved = localStorage.getItem('tetrisCellSize');
+    return (saved as CellSizeOption) || 'medium';
+  });
+  const [sensitivity, setSensitivity] = useState<SensitivityOption>(() => {
+    const saved = localStorage.getItem('tetrisSensitivity');
+    return (saved as SensitivityOption) || 'normal';
+  });
   const [musicVolume, setMusicVolume] = useState<number>(() => {
     const saved = localStorage.getItem('tetrisMusicVolume');
     const parsed = saved ? parseFloat(saved) : 0.25;
@@ -39,6 +48,7 @@ export function TetrisGame() {
   const audioManagerRef = useRef<AudioManager | null>(null);
   const {
     leaderboard,
+    allTimeLeaderboard,
     leaderboardLoading,
     leaderboardError,
     playerName,
@@ -141,6 +151,14 @@ export function TetrisGame() {
   useEffect(() => {
     localStorage.setItem('tetrisPalette', palette);
   }, [palette]);
+
+  useEffect(() => {
+    localStorage.setItem('tetrisCellSize', cellSize);
+  }, [cellSize]);
+
+  useEffect(() => {
+    localStorage.setItem('tetrisSensitivity', sensitivity);
+  }, [sensitivity]);
 
   useEffect(() => {
     getAudio().setMusicVolume(musicVolume);
@@ -323,7 +341,7 @@ export function TetrisGame() {
           <Cog className='h-4 w-4' />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='w-64 space-y-3 p-3'>
+      <DropdownMenuContent align='end' className='w-72 space-y-3 p-3'>
         <DropdownMenuLabel>Settings</DropdownMenuLabel>
         <DropdownMenuSeparator />
 
@@ -342,6 +360,49 @@ export function TetrisGame() {
                 disabled={isPlaying}
               >
                 {name}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <DropdownMenuSeparator />
+
+        <div className='space-y-2 px-2'>
+          <div className='flex items-center pt-1'>
+            <span className='text-sm font-medium'>Cell Size</span>
+          </div>
+          <div className='grid grid-cols-3 gap-2'>
+            {(['small', 'medium', 'large'] as CellSizeOption[]).map((size) => (
+              <Button
+                key={size}
+                variant={cellSize === size ? 'default' : 'outline'}
+                size='sm'
+                className='h-8 capitalize'
+                onClick={() => setCellSize(size)}
+                disabled={isPlaying}
+              >
+                {size}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <DropdownMenuSeparator />
+
+        <div className='space-y-2 px-2'>
+          <div className='flex items-center pt-1'>
+            <span className='text-sm font-medium'>Key Sensitivity</span>
+          </div>
+          <div className='grid grid-cols-2 gap-2'>
+            {(['slow', 'normal', 'fast', 'instant'] as SensitivityOption[]).map((sens) => (
+              <Button
+                key={sens}
+                variant={sensitivity === sens ? 'default' : 'outline'}
+                size='sm'
+                className='h-8 capitalize'
+                onClick={() => setSensitivity(sens)}
+              >
+                {sens}
               </Button>
             ))}
           </div>
@@ -390,6 +451,24 @@ export function TetrisGame() {
         <div className='flex-1 max-w-md' />
 
         <div className='flex flex-col items-center gap-6'>
+          <div className='flex items-center gap-2 mb-2'>
+            {settingsMenu}
+            <LeaderboardSheet
+              weeklyLeaderboard={leaderboard}
+              allTimeLeaderboard={allTimeLeaderboard}
+              loading={leaderboardLoading}
+              error={leaderboardError}
+              pendingScore={pendingScore}
+              playerName={playerName}
+              submitting={submittingScore}
+              lastSubmittedId={lastSubmittedId}
+              hasSupabaseConfig={hasSupabaseConfig}
+              weekStartLabel={weekStartLabel}
+              onPlayerNameChange={setPlayerName}
+              onSubmit={handleSubmitScore}
+            />
+          </div>
+
           <TetrisCore
             ref={gameRef}
             startLevel={startLevel}
@@ -402,13 +481,14 @@ export function TetrisGame() {
             }}
             onStateChange={handleStateChange}
             palette={palette}
+            cellSize={CELL_SIZE_OPTIONS[cellSize]}
+            sensitivity={SENSITIVITY_PRESETS[sensitivity]}
             onLineClear={handleLineClearSfx}
             onMove={handleMoveSfx}
             onSoftDrop={handleSoftDropSfx}
             onHardDrop={handleHardDropSfx}
             onRotate={handleRotateSfx}
             onHold={handleHoldSfx}
-            sideControl={settingsMenu}
           />
 
           <div className='flex flex-col items-center gap-2'>
@@ -458,20 +538,6 @@ export function TetrisGame() {
             </div>
           )}
         </div>
-
-        <LeaderboardPanel
-          leaderboard={leaderboard}
-          loading={leaderboardLoading}
-          error={leaderboardError}
-          pendingScore={pendingScore}
-          playerName={playerName}
-          submitting={submittingScore}
-          lastSubmittedId={lastSubmittedId}
-          hasSupabaseConfig={hasSupabaseConfig}
-          weekStartLabel={weekStartLabel}
-          onPlayerNameChange={setPlayerName}
-          onSubmit={handleSubmitScore}
-        />
 
         <div className='flex-1 max-w-md' />
       </div>

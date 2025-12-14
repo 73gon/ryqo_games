@@ -1,86 +1,214 @@
-import { useTranslation } from 'react-i18next'
-import { Link, useRouterState } from '@tanstack/react-router'
-import { motion, AnimatePresence } from 'framer-motion'
-import { LanguageSwitcher } from './LanguageSwitcher'
-import { ModeToggle } from '@/components/ui/darkmode'
-import { Ryqo } from '@/components/ryqo'
-import { Separator } from '@/components/ui/separator'
+import { useTranslation } from 'react-i18next';
+import { Link, useRouterState } from '@tanstack/react-router';
+import { motion, AnimatePresence } from 'motion/react';
+import { Settings } from 'lucide-react';
+import { LanguageSwitcher } from './language-switcher';
+import { ModeToggle } from '@/components/ui/darkmode';
+import { Ryqo } from '@/components/ryqo';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from '@/components/ui/navigation-menu';
+import { Button } from '@/components/ui/button';
+import { getPageWidthClass, useSettings } from '@/lib/settings';
 
 export function Navbar() {
-  const { t } = useTranslation()
-  const router = useRouterState()
-  const isDetailPage = router.location.pathname.startsWith('/prophets/')
+  const { t } = useTranslation();
+  const router = useRouterState();
+  const { settings } = useSettings();
 
   // Check if we're on a game page and extract game name
-  const isGamePage = router.location.pathname.startsWith('/games/')
-  const gameName = isGamePage
-    ? router.location.pathname.split('/games/')[1]
-    : null
+  const isGamePage = router.location.pathname.startsWith('/games/');
+  const gameName = isGamePage ? router.location.pathname.split('/games/')[1]?.split('/')[0] : null;
 
   // Map route names to translation keys
   const gameNameMap: Record<string, string> = {
-    snake: t('games.titles.snake'),
-    tetris: t('games.titles.tetris'),
-    pacman: t('games.titles.pacman'),
-    'game-2048': t('games.titles.2048'),
-    minesweeper: t('games.titles.minesweeper'),
-    pong: t('games.titles.pong'),
-    breakout: t('games.titles.breakout'),
-  }
+    snake: t('games.snake.name'),
+    tetris: t('games.tetris.name'),
+    pacman: t('games.pacman.name'),
+    '2048': t('games.2048.name'),
+    minesweeper: t('games.minesweeper.name'),
+    pong: t('games.pong.name'),
+    breakout: t('games.breakout.name'),
+    typeracer: t('games.typeracer.name'),
+  };
+
+  const arcadeGames = [
+    { name: 'snake', path: '/games/snake', description: t('games.snake.description', 'Classic snake game') },
+    { name: 'tetris', path: '/games/tetris', description: t('games.tetris.description', 'Stack falling blocks') },
+    { name: 'pacman', path: '/games/pacman', description: t('games.pacman.description', 'Eat dots, avoid ghosts') },
+    { name: '2048', path: '/games/2048', description: t('games.2048.description', 'Merge tiles to 2048') },
+    { name: 'minesweeper', path: '/games/minesweeper', description: t('games.minesweeper.description', 'Find hidden mines') },
+    { name: 'pong', path: '/games/pong', description: t('games.pong.description', 'Classic pong game') },
+    { name: 'breakout', path: '/games/breakout', description: t('games.breakout.description', 'Break all bricks') },
+  ];
 
   return (
-    <header className="lg:sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          <Link
-            to="/"
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-          >
-            <Ryqo className="h-8 w-8" />
-            <span className="text-lg sm:text-xl font-semibold text-foreground">
-              {isGamePage && gameName ? (
-                <>
-                  {t('navbar.title')}
-                  <span className="text-foreground">/</span>
-                  {gameNameMap[gameName] || gameName}
-                </>
-              ) : (
-                t('navbar.title')
-              )}
-            </span>
-          </Link>
+    <AnimatePresence mode='popLayout' initial={false}>
+      <motion.header
+        className={`lg:sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 mx-auto ${getPageWidthClass(settings.pageWidth)}`}
+        layout
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
+        transition={{
+          type: 'spring',
+          stiffness: 300,
+          damping: 30,
+        }}
+      >
+        <div className='px-4 sm:px-6 lg:px-8'>
+          <div className='flex h-16 items-center justify-between'>
+            <motion.div layout className='flex items-center gap-4'>
+              <Link to='/' className='flex items-center gap-2 hover:opacity-80 transition-opacity'>
+                <motion.div layout className='shrink-0'>
+                  <Ryqo className='h-8 w-8' />
+                </motion.div>
+                <motion.div layout className='relative text-lg sm:text-xl font-semibold text-foreground overflow-hidden whitespace-nowrap pr-6'>
+                  <AnimatePresence mode='popLayout' initial={false}>
+                    <motion.span
+                      key={isGamePage && gameName ? `${gameName}` : 'home'}
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 300,
+                        damping: 30,
+                      }}
+                      layout='position'
+                      className='inline-block'
+                    >
+                      {isGamePage && gameName ? (
+                        <>
+                          {t('navbar.title')}
+                          <span className='text-foreground px-1'>/</span>
+                          {gameNameMap[gameName] || gameName}
+                        </>
+                      ) : (
+                        t('navbar.title')
+                      )}
+                    </motion.span>
+                  </AnimatePresence>
+                </motion.div>
+              </Link>
+            </motion.div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <AnimatePresence mode="wait">
-              {isDetailPage && (
-                <>
-                  {/* Desktop: Show inline controls */}
+            <motion.div className='flex items-center gap-4' layout>
+              {/* Navigation Menu */}
+              <NavigationMenu className='hidden sm:flex'>
+                <NavigationMenuList>
+                  {/* Home Link */}
+                  <NavigationMenuItem>
+                    <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
+                      <Link to='/'>
+                        <span>{t('navbar.tabs.home')}</span>
+                      </Link>
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+
+                  {/* Arcade Menu */}
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className='gap-1'>
+                      <span>{t('navbar.tabs.arcade')}</span>
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className='grid w-[400px] gap-1 p-2 md:w-[300px] md:grid-cols-2 lg:w-[300px]'>
+                        {arcadeGames.map((game) => (
+                          <li key={game.name}>
+                            <NavigationMenuLink asChild>
+                              <Link
+                                to={game.path}
+                                className='block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
+                              >
+                                <div className='text-sm font-medium leading-none'>{gameNameMap[game.name] || game.name}</div>
+                              </Link>
+                            </NavigationMenuLink>
+                          </li>
+                        ))}
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+
+                  {/* TypeRacer Menu */}
+                  <NavigationMenuItem>
+                    <NavigationMenuTrigger className='gap-1'>
+                      <span>{t('navbar.tabs.typeracer')}</span>
+                    </NavigationMenuTrigger>
+                    <NavigationMenuContent>
+                      <ul className='grid w-[200px] gap-1 p-2'>
+                        <li>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              to='/games/typeracer'
+                              className='block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
+                            >
+                              <div className='text-sm font-medium leading-none'>{t('games.typeracer.menu', 'Menu')}</div>
+                              <p className='line-clamp-2 text-sm leading-snug text-muted-foreground'>
+                                {t('games.typeracer.menuDescription', 'Choose your game mode')}
+                              </p>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                        <li>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              to='/games/typeracer/solo'
+                              className='block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
+                            >
+                              <div className='text-sm font-medium leading-none'>{t('games.typeracer.modes.solo', 'Solo')}</div>
+                              <p className='line-clamp-2 text-sm leading-snug text-muted-foreground'>
+                                {t('games.typeracer.soloDescription', 'Practice typing alone')}
+                              </p>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                        <li>
+                          <NavigationMenuLink asChild>
+                            <Link
+                              to='/games/typeracer/multiplayer'
+                              className='block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
+                            >
+                              <div className='text-sm font-medium leading-none'>{t('games.typeracer.modes.multiplayer', 'Multiplayer')}</div>
+                              <p className='line-clamp-2 text-sm leading-snug text-muted-foreground'>
+                                {t('games.typeracer.multiplayerDescription', 'Race against others')}
+                              </p>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                      </ul>
+                    </NavigationMenuContent>
+                  </NavigationMenuItem>
+                </NavigationMenuList>
+              </NavigationMenu>
+            </motion.div>
+
+            <div className='flex items-center gap-2 sm:gap-3'>
+              <Link to='/settings'>
+                <Button variant='ghost' size='icon' className='h-9 w-9'>
                   <motion.div
-                    initial={{ opacity: 0, x: -10, width: 0 }}
-                    animate={{ opacity: 1, x: 0, width: 'auto' }}
-                    exit={{ opacity: 0, x: -10, width: 0 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="hidden md:flex items-center gap-2 sm:gap-3"
+                    animate={{ rotate: 0 }}
+                    whileHover={{ rotate: 200 }}
+                    whileTap={{ rotate: -10 }}
+                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                   >
-                    <Separator orientation="vertical" className="h-6" />
+                    <Settings className='h-4 w-4' />
                   </motion.div>
 
-                  {/* Mobile: Show dropdown */}
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="md:hidden"
-                  ></motion.div>
-                </>
-              )}
-            </AnimatePresence>
-            <LanguageSwitcher />
-            <ModeToggle />
+                  <span className='sr-only'>Settings</span>
+                </Button>
+              </Link>
+              <LanguageSwitcher />
+              <ModeToggle />
+            </div>
           </div>
         </div>
-      </div>
-    </header>
-  )
+      </motion.header>
+    </AnimatePresence>
+  );
 }

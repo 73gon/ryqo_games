@@ -1,298 +1,426 @@
-import { useEffect, useState, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
-import { GameLayout } from '@/components/GameLayout'
-import { Button } from '@/components/ui/button'
-import { RotateCcw } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { GameLayout } from '@/components/game-layout';
+import { Button } from '@/components/ui/button';
+import { RotateCcw, Trophy, Undo2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
+import ElectricBorder from '@/components/electric-border';
 
-const GRID_SIZE = 4
+const GRID_SIZE = 4;
+const CELL_SIZE = 80;
+const CELL_GAP = 12;
 
 type Tile = {
-  id: number
-  value: number
-  x: number
-  y: number
-  mergedFrom?: number[] // ids of tiles that merged into this one
-}
+  id: number;
+  value: number;
+  x: number;
+  y: number;
+  isNew?: boolean;
+  isMerged?: boolean;
+};
+
+type GameState = {
+  tiles: Tile[];
+  score: number;
+};
+
+const getTileColor = (value: number, isDark: boolean) => {
+  const colors: Record<number, { bg: string; text: string }> = {
+    2: { bg: isDark ? 'bg-zinc-700' : 'bg-amber-100', text: isDark ? 'text-zinc-100' : 'text-zinc-800' },
+    4: { bg: isDark ? 'bg-zinc-600' : 'bg-amber-200', text: isDark ? 'text-zinc-100' : 'text-zinc-800' },
+    8: { bg: isDark ? 'bg-orange-600' : 'bg-orange-400', text: 'text-white' },
+    16: { bg: isDark ? 'bg-orange-500' : 'bg-orange-500', text: 'text-white' },
+    32: { bg: isDark ? 'bg-red-600' : 'bg-red-400', text: 'text-white' },
+    64: { bg: isDark ? 'bg-red-500' : 'bg-red-500', text: 'text-white' },
+    128: { bg: isDark ? 'bg-yellow-500' : 'bg-yellow-400', text: 'text-white' },
+    256: { bg: isDark ? 'bg-yellow-400' : 'bg-yellow-500', text: 'text-white' },
+    512: { bg: isDark ? 'bg-yellow-300' : 'bg-yellow-600', text: isDark ? 'text-zinc-800' : 'text-white' },
+    1024: { bg: isDark ? 'bg-emerald-500' : 'bg-emerald-500', text: 'text-white' },
+    2048: { bg: isDark ? 'bg-emerald-400' : 'bg-emerald-400', text: 'text-white' },
+  };
+  return colors[value] || { bg: isDark ? 'bg-purple-600' : 'bg-purple-500', text: 'text-white' };
+};
+
+const getFontSize = (value: number) => {
+  if (value < 100) return 'text-4xl';
+  if (value < 1000) return 'text-3xl';
+  if (value < 10000) return 'text-2xl';
+  return 'text-xl';
+};
 
 export function Game2048() {
-  const { t } = useTranslation()
-  const [tiles, setTiles] = useState<Tile[]>([])
-  const [score, setScore] = useState(0)
-  const [gameOver, setGameOver] = useState(false)
-  const [won, setWon] = useState(false)
-  const [nextId, setNextId] = useState(1)
+  const { t } = useTranslation();
+  const [tiles, setTiles] = useState<Tile[]>([]);
+  const [score, setScore] = useState(0);
+  const [bestScore, setBestScore] = useState(() => {
+    const saved = localStorage.getItem('2048BestScore');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [gameOver, setGameOver] = useState(false);
+  const [won, setWon] = useState(false);
+  const [continueAfterWin, setContinueAfterWin] = useState(false);
+  const [nextId, setNextId] = useState(1);
+  const [history, setHistory] = useState<GameState[]>([]);
+  const [isDark, setIsDark] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const initGame = useCallback(() => {
-    setTiles([])
-    setScore(0)
-    setGameOver(false)
-    setWon(false)
-    setNextId(1)
+  // Detect dark mode
+  useEffect(() => {
+    const checkDark = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    checkDark();
+    const observer = new MutationObserver(checkDark);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
 
-    // Add two initial tiles
-    let initialTiles: Tile[] = []
-    let id = 1
-
-    const addTile = (currentTiles: Tile[]) => {
-      const emptyCells = []
-      for (let x = 0; x < GRID_SIZE; x++) {
-        for (let y = 0; y < GRID_SIZE; y++) {
-          if (!currentTiles.find((t) => t.x === x && t.y === y)) {
-            emptyCells.push({ x, y })
-          }
+  const addRandomTile = useCallback((currentTiles: Tile[], idStart: number): { tiles: Tile[]; nextId: number } => {
+    const emptyCells: { x: number; y: number }[] = [];
+    for (let x = 0; x < GRID_SIZE; x++) {
+      for (let y = 0; y < GRID_SIZE; y++) {
+        if (!currentTiles.find((t) => t.x === x && t.y === y)) {
+          emptyCells.push({ x, y });
         }
       }
-      if (emptyCells.length === 0) return currentTiles
-
-      const { x, y } = emptyCells[Math.floor(Math.random() * emptyCells.length)]
-      const value = Math.random() < 0.9 ? 2 : 4
-      return [...currentTiles, { id: id++, value, x, y }]
     }
+    if (emptyCells.length === 0) return { tiles: currentTiles, nextId: idStart };
 
-    initialTiles = addTile(initialTiles)
-    initialTiles = addTile(initialTiles)
+    const { x, y } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    const value = Math.random() < 0.9 ? 2 : 4;
+    return {
+      tiles: [...currentTiles, { id: idStart, value, x, y, isNew: true }],
+      nextId: idStart + 1,
+    };
+  }, []);
 
-    setTiles(initialTiles)
-    setNextId(id)
-  }, [])
+  const checkGameOver = useCallback((currentTiles: Tile[]): boolean => {
+    // Check if any empty cells
+    if (currentTiles.length < GRID_SIZE * GRID_SIZE) return false;
+
+    // Check for possible merges
+    for (const tile of currentTiles) {
+      const neighbors = [
+        { x: tile.x - 1, y: tile.y },
+        { x: tile.x + 1, y: tile.y },
+        { x: tile.x, y: tile.y - 1 },
+        { x: tile.x, y: tile.y + 1 },
+      ];
+      for (const n of neighbors) {
+        const neighbor = currentTiles.find((t) => t.x === n.x && t.y === n.y);
+        if (neighbor && neighbor.value === tile.value) return false;
+      }
+    }
+    return true;
+  }, []);
+
+  const initGame = useCallback(() => {
+    let result = addRandomTile([], 1);
+    result = addRandomTile(result.tiles, result.nextId);
+    setTiles(result.tiles);
+    setNextId(result.nextId);
+    setScore(0);
+    setGameOver(false);
+    setWon(false);
+    setContinueAfterWin(false);
+    setHistory([]);
+  }, [addRandomTile]);
 
   useEffect(() => {
-    initGame()
-  }, [initGame])
+    initGame();
+  }, [initGame]);
+
+  useEffect(() => {
+    if (score > bestScore) {
+      setBestScore(score);
+      localStorage.setItem('2048BestScore', score.toString());
+    }
+  }, [score, bestScore]);
 
   const move = useCallback(
     (direction: 'UP' | 'DOWN' | 'LEFT' | 'RIGHT') => {
-      if (gameOver || won) return
+      if (gameOver || (won && !continueAfterWin)) return;
 
       setTiles((prevTiles) => {
-        let moved = false
-        let newScore = score
-        let newTiles = [...prevTiles]
+        // Save history
+        setHistory((h) => [...h.slice(-9), { tiles: prevTiles, score }]);
 
-        // Sort tiles based on direction to process them in correct order
-        if (direction === 'UP') newTiles.sort((a, b) => a.y - b.y)
-        if (direction === 'DOWN') newTiles.sort((a, b) => b.y - a.y)
-        if (direction === 'LEFT') newTiles.sort((a, b) => a.x - b.x)
-        if (direction === 'RIGHT') newTiles.sort((a, b) => b.x - a.x)
+        let moved = false;
+        let newScore = score;
+        let idCounter = nextId;
 
-        const mergedIds = new Set<number>()
+        // Clear flags
+        let workingTiles = prevTiles.map((t) => ({ ...t, isNew: false, isMerged: false }));
 
-        // Process each tile
-        // This is a simplified logic, a real implementation needs to handle merging carefully
-        // We'll simulate the movement by iterating and moving each tile as far as possible
-
-        // Actually, it's easier to map the grid to a 2D array, manipulate it, and map back to tiles
-        // But to keep animations (React keys), we want to preserve tile objects.
-
-        // Let's try a simpler approach:
-        // For each line (row or column depending on direction)
-
-        const lines = []
+        // Process each line
+        const lines: Tile[][] = [];
         for (let i = 0; i < GRID_SIZE; i++) {
-          const line = newTiles.filter((t) =>
-            direction === 'UP' || direction === 'DOWN' ? t.x === i : t.y === i,
-          )
-          // Sort line
+          const line = workingTiles.filter((t) => (direction === 'UP' || direction === 'DOWN' ? t.x === i : t.y === i));
           if (direction === 'UP' || direction === 'LEFT') {
-            line.sort((a, b) => (direction === 'UP' ? a.y - b.y : a.x - b.x))
+            line.sort((a, b) => (direction === 'UP' ? a.y - b.y : a.x - b.x));
           } else {
-            line.sort((a, b) => (direction === 'DOWN' ? b.y - a.y : b.x - a.x))
+            line.sort((a, b) => (direction === 'DOWN' ? b.y - a.y : b.x - a.x));
           }
-          lines.push(line)
+          lines.push(line);
         }
 
-        const nextTiles: Tile[] = []
-        let idCounter = nextId
+        const nextTiles: Tile[] = [];
 
-        lines.forEach((line) => {
-          const newLine: Tile[] = []
-          let targetPos = 0 // 0 to 3, relative to direction start
+        lines.forEach((line, lineIndex) => {
+          const newLine: Tile[] = [];
+          let targetPos = 0;
 
           for (let i = 0; i < line.length; i++) {
-            const tile = line[i]
-            const lastTile = newLine[newLine.length - 1]
+            const tile = line[i];
+            const lastTile = newLine[newLine.length - 1];
 
-            // Check merge
-            if (
-              lastTile &&
-              lastTile.value === tile.value &&
-              !mergedIds.has(lastTile.id)
-            ) {
+            if (lastTile && lastTile.value === tile.value && !lastTile.isMerged) {
               // Merge
-              const mergedTile = {
+              const mergedValue = lastTile.value * 2;
+              newLine[newLine.length - 1] = {
                 ...lastTile,
-                value: lastTile.value * 2,
-                mergedFrom: [lastTile.id, tile.id], // Keep track for animation if we wanted
-                id: idCounter++, // New ID for the merged tile? Or keep one?
-                // Better to keep one ID or create new. Let's create new to trigger "pop" animation
+                value: mergedValue,
+                isMerged: true,
+                id: idCounter++,
+              };
+              newScore += mergedValue;
+              moved = true;
+
+              // Check win
+              if (mergedValue === 2048 && !won && !continueAfterWin) {
+                setWon(true);
               }
-              // Actually, to keep React happy, maybe better to keep one ID.
-              // But for 2048, usually the merged tile is "new".
-              // Let's just update the last tile in newLine
-              newLine[newLine.length - 1] = mergedTile
-              mergedIds.add(mergedTile.id)
-              newScore += mergedTile.value
-              moved = true
             } else {
-              // Move
-              let newX = tile.x
-              let newY = tile.y
+              let newX = tile.x;
+              let newY = tile.y;
 
               if (direction === 'UP') {
-                newX = tile.x
-                newY = targetPos
-              }
-              if (direction === 'DOWN') {
-                newX = tile.x
-                newY = GRID_SIZE - 1 - targetPos
-              }
-              if (direction === 'LEFT') {
-                newX = targetPos
-                newY = tile.y
-              }
-              if (direction === 'RIGHT') {
-                newX = GRID_SIZE - 1 - targetPos
-                newY = tile.y
+                newX = lineIndex;
+                newY = targetPos;
+              } else if (direction === 'DOWN') {
+                newX = lineIndex;
+                newY = GRID_SIZE - 1 - targetPos;
+              } else if (direction === 'LEFT') {
+                newX = targetPos;
+                newY = lineIndex;
+              } else {
+                newX = GRID_SIZE - 1 - targetPos;
+                newY = lineIndex;
               }
 
-              if (newX !== tile.x || newY !== tile.y) moved = true
+              if (newX !== tile.x || newY !== tile.y) moved = true;
 
-              newLine.push({ ...tile, x: newX, y: newY })
-              targetPos++
+              newLine.push({ ...tile, x: newX, y: newY });
+              targetPos++;
             }
           }
-          nextTiles.push(...newLine)
-        })
+          nextTiles.push(...newLine);
+        });
 
-        if (!moved) return prevTiles
+        if (!moved) return prevTiles;
 
-        setScore(newScore)
-        setNextId(idCounter)
+        setScore(newScore);
 
         // Add new tile
-        const emptyCells = []
-        for (let x = 0; x < GRID_SIZE; x++) {
-          for (let y = 0; y < GRID_SIZE; y++) {
-            if (!nextTiles.find((t) => t.x === x && t.y === y)) {
-              emptyCells.push({ x, y })
-            }
-          }
+        const result = addRandomTile(nextTiles, idCounter);
+        setNextId(result.nextId);
+
+        // Check game over
+        if (checkGameOver(result.tiles)) {
+          setGameOver(true);
         }
 
-        if (emptyCells.length > 0) {
-          const { x, y } =
-            emptyCells[Math.floor(Math.random() * emptyCells.length)]
-          const value = Math.random() < 0.9 ? 2 : 4
-          nextTiles.push({ id: idCounter++, value, x, y })
-          setNextId(idCounter + 1)
-        }
-
-        // Check Game Over (no moves possible)
-        if (emptyCells.length <= 1) {
-          // We just filled one, so if 0 or 1 left, check merges
-          // Check if any merges possible
-          // ... (omitted for brevity, but should be done)
-        }
-
-        return nextTiles
-      })
+        return result.tiles;
+      });
     },
-    [gameOver, won, score, nextId],
-  )
+    [gameOver, won, continueAfterWin, score, nextId, addRandomTile, checkGameOver],
+  );
+
+  const undo = useCallback(() => {
+    if (history.length === 0) return;
+    const lastState = history[history.length - 1];
+    setTiles(lastState.tiles);
+    setScore(lastState.score);
+    setHistory((h) => h.slice(0, -1));
+    setGameOver(false);
+  }, [history]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+      }
       switch (e.key) {
         case 'ArrowUp':
-          move('UP')
-          break
+          move('UP');
+          break;
         case 'ArrowDown':
-          move('DOWN')
-          break
+          move('DOWN');
+          break;
         case 'ArrowLeft':
-          move('LEFT')
-          break
+          move('LEFT');
+          break;
         case 'ArrowRight':
-          move('RIGHT')
-          break
+          move('RIGHT');
+          break;
       }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [move])
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [move]);
+
+  // Touch handling
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let startX = 0;
+    let startY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const diffX = endX - startX;
+      const diffY = endY - startY;
+
+      if (Math.abs(diffX) < 30 && Math.abs(diffY) < 30) return;
+
+      if (Math.abs(diffX) > Math.abs(diffY)) {
+        move(diffX > 0 ? 'RIGHT' : 'LEFT');
+      } else {
+        move(diffY > 0 ? 'DOWN' : 'UP');
+      }
+    };
+
+    container.addEventListener('touchstart', handleTouchStart);
+    container.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [move]);
+
+  const gridSize = GRID_SIZE * CELL_SIZE + (GRID_SIZE + 1) * CELL_GAP;
 
   return (
     <GameLayout
       controls={
-        <div className="flex items-center gap-4">
-          <div className="bg-muted px-4 py-2 rounded-md">
-            <span className="text-xs uppercase font-bold text-muted-foreground block">
-              {t('games.common.score')}
-            </span>
-            <span className="text-xl font-bold">{score}</span>
+        <div className='flex items-center gap-3'>
+          <div className='bg-muted px-4 py-2 rounded-lg'>
+            <span className='text-xs uppercase font-bold text-muted-foreground block'>{t('games.common.score')}</span>
+            <span className='text-xl font-bold'>{score}</span>
           </div>
-          <Button onClick={initGame} variant="outline" size="icon">
-            <RotateCcw className="h-4 w-4" />
+          <div className='bg-muted px-4 py-2 rounded-lg'>
+            <span className='text-xs uppercase font-bold text-muted-foreground flex items-center gap-1'>
+              <Trophy className='h-3 w-3' />
+              {t('games.common.best', 'Best')}
+            </span>
+            <span className='text-xl font-bold'>{bestScore}</span>
+          </div>
+          <Button onClick={undo} variant='outline' size='icon' disabled={history.length === 0}>
+            <Undo2 className='h-4 w-4' />
+          </Button>
+          <Button onClick={initGame} variant='outline' size='icon'>
+            <RotateCcw className='h-4 w-4' />
           </Button>
         </div>
       }
     >
-      <div className="relative bg-muted p-4 rounded-lg w-[300px] h-[300px] sm:w-[400px] sm:h-[400px]">
-        {/* Grid Background */}
-        <div className="grid grid-cols-4 grid-rows-4 gap-2 w-full h-full">
-          {Array.from({ length: 16 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-background/50 rounded-md w-full h-full"
-            />
-          ))}
-        </div>
-
-        {/* Tiles */}
-        {tiles.map((tile) => (
+      <div className='flex flex-col items-center gap-6'>
+        <ElectricBorder color='#f59e0b' thickness={2} className='rounded-xl'>
           <div
-            key={tile.id}
-            className={cn(
-              'absolute flex items-center justify-center rounded-md font-bold text-2xl sm:text-3xl transition-all duration-100 ease-in-out',
-              'w-[calc(25%-0.5rem)] h-[calc(25%-0.5rem)]', // Approximate size minus gap
-              // Colors based on value (Monochrome theme)
-              tile.value === 2 && 'bg-neutral-100 text-neutral-900',
-              tile.value === 4 && 'bg-neutral-200 text-neutral-900',
-              tile.value === 8 && 'bg-neutral-300 text-neutral-900',
-              tile.value === 16 && 'bg-neutral-400 text-neutral-900',
-              tile.value === 32 && 'bg-neutral-500 text-neutral-50',
-              tile.value === 64 && 'bg-neutral-600 text-neutral-50',
-              tile.value >= 128 && 'bg-neutral-800 text-neutral-50',
-              tile.value >= 1024 &&
-                'bg-neutral-900 text-neutral-50 ring-2 ring-neutral-500',
-            )}
-            style={{
-              left: `calc(${tile.x * 25}% + 0.25rem)`, // Adjust for gap/padding
-              top: `calc(${tile.y * 25}% + 0.25rem)`,
-              // Note: This positioning is rough, grid gap makes it tricky with %
-              // Better to use fixed pixels or a more robust CSS grid overlay
-              // For this demo, we'll try to match the grid cells
-              transform: `translate(${tile.x * 4}px, ${tile.y * 4}px)`, // Add gap offset?
-            }}
+            ref={containerRef}
+            className='relative rounded-xl p-3 bg-zinc-300 dark:bg-zinc-800 touch-none select-none'
+            style={{ width: gridSize, height: gridSize }}
           >
-            {tile.value}
-          </div>
-        ))}
+            {/* Grid Background */}
+            <div
+              className='grid gap-3 w-full h-full'
+              style={{
+                gridTemplateColumns: `repeat(${GRID_SIZE}, ${CELL_SIZE}px)`,
+                gridTemplateRows: `repeat(${GRID_SIZE}, ${CELL_SIZE}px)`,
+              }}
+            >
+              {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => (
+                <div key={i} className='bg-zinc-200 dark:bg-zinc-700 rounded-lg' />
+              ))}
+            </div>
 
-        {/* Overlay for Game Over / Won */}
-        {(gameOver || won) && (
-          <div className="absolute inset-0 bg-background/80 flex flex-col items-center justify-center z-10 rounded-lg">
-            <h2 className="text-4xl font-bold mb-4">
-              {won ? t('games.common.youWin') : t('games.common.gameOver')}
-            </h2>
-            <Button onClick={initGame}>{t('games.common.restart')}</Button>
+            {/* Tiles */}
+            <AnimatePresence>
+              {tiles.map((tile) => {
+                const colors = getTileColor(tile.value, isDark);
+                return (
+                  <motion.div
+                    key={tile.id}
+                    initial={tile.isNew ? { scale: 0, opacity: 0 } : tile.isMerged ? { scale: 1.2 } : false}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 400,
+                      damping: 25,
+                      duration: 0.15,
+                    }}
+                    className={cn(
+                      'absolute flex items-center justify-center rounded-lg font-bold shadow-lg',
+                      getFontSize(tile.value),
+                      colors.bg,
+                      colors.text,
+                    )}
+                    style={{
+                      width: CELL_SIZE,
+                      height: CELL_SIZE,
+                      left: CELL_GAP + tile.x * (CELL_SIZE + CELL_GAP),
+                      top: CELL_GAP + tile.y * (CELL_SIZE + CELL_GAP),
+                      transition: 'left 0.12s ease, top 0.12s ease',
+                    }}
+                  >
+                    {tile.value}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+
+            {/* Overlay for Game Over / Won */}
+            <AnimatePresence>
+              {(gameOver || (won && !continueAfterWin)) && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className='absolute inset-0 bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-xl gap-4'
+                >
+                  <h2 className={cn('text-4xl font-bold', won ? 'text-amber-500' : 'text-foreground')}>
+                    {won ? '🎉 2048!' : t('games.common.gameOver')}
+                  </h2>
+                  <p className='text-lg text-muted-foreground'>
+                    {t('games.common.finalScore', 'Final Score')}: {score}
+                  </p>
+                  <div className='flex gap-2'>
+                    {won && (
+                      <Button onClick={() => setContinueAfterWin(true)} variant='outline'>
+                        {t('games.2048.continue', 'Keep Playing')}
+                      </Button>
+                    )}
+                    <Button onClick={initGame}>{t('games.common.restart')}</Button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        )}
+        </ElectricBorder>
+
+        <p className='text-sm text-muted-foreground text-center'>
+          {t('games.2048.instructions', 'Use arrow keys or swipe to move tiles. Merge matching numbers to reach 2048!')}
+        </p>
       </div>
-      <p className="mt-4 text-sm text-muted-foreground">
-        {t('games.common.controls.tiles')}
-      </p>
     </GameLayout>
-  )
+  );
 }

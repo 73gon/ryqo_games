@@ -195,12 +195,27 @@ export function useTypeRacer({ text, onProgress, onComplete, enabled = true }: U
   };
 }
 
-export function useRandomText(): [string, () => void] {
-  const [text, setText] = useState(() => getRandomText());
+export function useRandomText(withPunctuation: boolean = true): [string, () => void] {
+  const [text, setText] = useState(() => {
+    let t = getRandomText();
+    if (!withPunctuation) {
+      t = t.replace(/[.,!?;:]/g, '');
+    }
+    return t;
+  });
 
   const refreshText = useCallback(() => {
-    setText(getRandomText());
-  }, []);
+    let t = getRandomText();
+    if (!withPunctuation) {
+      t = t.replace(/[.,!?;:]/g, '');
+    }
+    setText(t);
+  }, [withPunctuation]);
+
+  // Update text when punctuation setting changes
+  useEffect(() => {
+    refreshText();
+  }, [withPunctuation, refreshText]);
 
   return [text, refreshText];
 }

@@ -77,11 +77,12 @@ export interface TetrisCoreProps {
   onGameRestart: () => void;
   onStateChange: (playing: boolean) => void;
   palette?: PaletteName;
+  cellSize?: number;
+  sensitivity?: { dasMultiplier: number; arrMultiplier: number };
   onLineClear?: (linesCleared: number) => void;
   onMove?: () => void;
   onSoftDrop?: () => void;
   onHardDrop?: () => void;
   onRotate?: () => void;
   onHold?: () => void;
-  sideControl?: React.ReactNode;
 }

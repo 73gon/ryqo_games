@@ -15,9 +15,9 @@ export const Keyboard = memo(function Keyboard({ pressedKey, lastKeyCorrect }: K
     let baseClass = 'flex items-center justify-center rounded-md border font-mono text-xs transition-all duration-75 ';
 
     if (key === ' ') {
-      baseClass += 'w-48 h-8 ';
+      baseClass += 'w-48 h-9 ';
     } else {
-      baseClass += 'w-8 h-8 ';
+      baseClass += 'size-9 ';
     }
 
     if (isPressed) {
@@ -36,7 +36,7 @@ export const Keyboard = memo(function Keyboard({ pressedKey, lastKeyCorrect }: K
   };
 
   return (
-    <div className='flex flex-col items-center gap-1 p-3 bg-card/50 rounded-lg border border-border'>
+    <div className='flex flex-col items-center gap-1 py-2'>
       {KEYBOARD_LAYOUT.map((row, rowIndex) => (
         <div key={rowIndex} className='flex gap-1 justify-center'>
           {row.map((key) => (

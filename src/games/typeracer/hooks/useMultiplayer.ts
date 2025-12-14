@@ -21,11 +21,12 @@ interface UseMultiplayerReturn {
   isLoading: boolean;
   error: string | null;
   countdown: number | null;
-  createNewRoom: () => Promise<boolean>;
+  createNewRoom: (withPunctuation?: boolean) => Promise<boolean>;
   joinExistingRoom: (roomId: string) => Promise<boolean>;
   startTheRace: () => Promise<boolean>;
   updateProgress: (progress: number, wpm: number, accuracy: number, finished: boolean) => void;
   leaveRoom: () => void;
+  resetForNewRace: () => void;
   hasSupabaseConfig: boolean;
 }
 
@@ -132,31 +133,34 @@ export function useMultiplayer({ onRaceStart, onCountdownStart, onCountdownTick 
     };
   }, []);
 
-  const createNewRoom = useCallback(async (): Promise<boolean> => {
-    if (!hasSupabaseConfig) {
-      setError('Multiplayer requires Supabase configuration');
-      return false;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const newRoom = await createRoom(playerId, playerName);
-      if (newRoom) {
-        setRoom(newRoom);
-        return true;
-      } else {
-        setError('Failed to create room');
+  const createNewRoom = useCallback(
+    async (withPunctuation: boolean = true): Promise<boolean> => {
+      if (!hasSupabaseConfig) {
+        setError('Multiplayer requires Supabase configuration');
         return false;
       }
-    } catch (err) {
-      setError('Error creating room');
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [playerId, playerName]);
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const newRoom = await createRoom(playerId, playerName, withPunctuation);
+        if (newRoom) {
+          setRoom(newRoom);
+          return true;
+        } else {
+          setError('Failed to create room');
+          return false;
+        }
+      } catch (err) {
+        setError('Error creating room');
+        return false;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [playerId, playerName],
+  );
 
   const joinExistingRoom = useCallback(
     async (roomId: string): Promise<boolean> => {
@@ -226,6 +230,17 @@ export function useMultiplayer({ onRaceStart, onCountdownStart, onCountdownTick 
     setError(null);
   }, []);
 
+  // Reset for a new race in the same room (play again)
+  const resetForNewRace = useCallback(() => {
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    countdownStartedRef.current = false;
+    raceStartedRef.current = false;
+    setCountdown(null);
+  }, []);
+
   return {
     playerId,
     playerName,
@@ -241,6 +256,7 @@ export function useMultiplayer({ onRaceStart, onCountdownStart, onCountdownTick 
     startTheRace,
     updateProgress,
     leaveRoom,
+    resetForNewRace,
     hasSupabaseConfig,
   };
 }

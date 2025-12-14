@@ -2,7 +2,7 @@
 
 import { supabaseClient, hasSupabaseConfig } from '@/lib/supabaseClient';
 import type { RaceRoom, Player } from './types';
-import { RACE_TEXTS } from './constants';
+import { generate } from 'random-words';
 
 const ROOMS_TABLE = 'typeracer_rooms';
 
@@ -21,17 +21,58 @@ export function generatePlayerId(): string {
   return `player_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
-// Get a random race text
+// Get random text for solo text mode (3 rows worth, ~60 words)
 export function getRandomText(): string {
-  return RACE_TEXTS[Math.floor(Math.random() * RACE_TEXTS.length)];
+  const words = generate({ exactly: 60, join: ' ' });
+  return words;
+}
+
+// Get multiple random sentences for multiplayer
+export function getMultiplayerText(withPunctuation: boolean = true): string {
+  const words = generate({ exactly: 50, join: ' ' });
+  if (withPunctuation) {
+    // Add some punctuation
+    return addPunctuation(words);
+  }
+  return words;
+}
+
+// Generate random words for timed mode
+export function generateRandomWords(wordCount: number, withPunctuation: boolean = false): string {
+  const words = generate({ exactly: wordCount, join: ' ' });
+  if (withPunctuation) {
+    return addPunctuation(words);
+  }
+  return words;
+}
+
+// Helper to add punctuation to text
+function addPunctuation(text: string): string {
+  const words = text.split(' ');
+  const punctuationMarks = [',', '.', '!', '?'];
+
+  for (let i = 5; i < words.length; i++) {
+    // Add punctuation roughly every 6-10 words
+    if (Math.random() < 0.15) {
+      const punct = punctuationMarks[Math.floor(Math.random() * punctuationMarks.length)];
+      words[i] += punct;
+    }
+  }
+
+  // Ensure the last word has a period
+  if (words.length > 0) {
+    words[words.length - 1] = words[words.length - 1].replace(/[.,!?]$/, '') + '.';
+  }
+
+  return words.join(' ');
 }
 
 // Create a new race room
-export async function createRoom(hostId: string, hostName: string): Promise<RaceRoom | null> {
+export async function createRoom(hostId: string, hostName: string, withPunctuation: boolean = true): Promise<RaceRoom | null> {
   if (!supabaseClient || !hasSupabaseConfig) return null;
 
   const roomId = generateRoomCode();
-  const text = getRandomText();
+  const text = getMultiplayerText(withPunctuation);
 
   const room: RaceRoom = {
     id: roomId,
@@ -49,6 +90,7 @@ export async function createRoom(hostId: string, hostName: string): Promise<Race
       },
     ],
     createdAt: Date.now(),
+    withPunctuation,
   };
 
   const { error } = await supabaseClient.from(ROOMS_TABLE).insert({

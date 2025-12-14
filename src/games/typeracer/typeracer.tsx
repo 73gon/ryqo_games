@@ -1,14 +1,12 @@
 // TypeRacer Game - Main Component
 
-import { useState, useEffect, useCallback } from 'react';
-import { GameLayout } from '@/components/GameLayout';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { GameLayout } from '@/components/game-layout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Toggle } from '@/components/ui/toggle';
-import { Users, User, Keyboard as KeyboardIcon, Type, Loader2, X } from 'lucide-react';
-import { TextDisplay, Keyboard, RaceTrack, ResultsScreen, LobbyScreen, CountdownOverlay } from './components';
-import { useTypeRacer, useRandomText, useMultiplayer, useRoomFromUrl } from './hooks';
-import type { GameStats, Player } from './types';
+import { X } from 'lucide-react';
+import { LobbyScreen, MainMenu, MultiplayerMenu, SoloRacingScreen, MultiplayerRacingScreen } from './components';
+import { useTypeRacer, useRandomText, useMultiplayer, useRoomFromUrl, useTimedMode } from './hooks';
+import type { GameStats, Player, SoloModeType, TimeDuration } from './types';
 
 type GameMode = 'menu' | 'solo' | 'multiplayer-menu' | 'lobby' | 'racing' | 'finished';
 
@@ -16,13 +14,17 @@ export function TypeRacerGame() {
   // Game state
   const [gameMode, setGameMode] = useState<GameMode>('menu');
   const [showKeyboard, setShowKeyboard] = useState(true);
-  const [showText, setShowText] = useState(true);
   const [finalStats, setFinalStats] = useState<GameStats | null>(null);
   const [localPlayers, setLocalPlayers] = useState<Player[]>([]);
   const [joinRoomId, setJoinRoomId] = useState('');
 
-  // Get random text for solo mode
-  const [soloText, refreshSoloText] = useRandomText();
+  // Solo mode settings
+  const [soloModeType, setSoloModeType] = useState<SoloModeType>('text');
+  const [timedDuration, setTimedDuration] = useState<TimeDuration>(30);
+  const [withPunctuation, setWithPunctuation] = useState(true);
+
+  // Get random text for solo text mode
+  const [soloText, refreshSoloText] = useRandomText(withPunctuation);
 
   // URL room check
   const urlRoomId = useRoomFromUrl();
@@ -43,6 +45,7 @@ export function TypeRacerGame() {
     startTheRace,
     updateProgress,
     leaveRoom,
+    resetForNewRace,
     hasSupabaseConfig: hasSupabase,
   } = useMultiplayer({
     onRaceStart: () => {
@@ -54,21 +57,49 @@ export function TypeRacerGame() {
     },
   });
 
-  // Determine the text to use
+  // Determine the text to use for text mode
   const raceText = room?.text || soloText;
 
-  // Type racer hook
+  // Solo timed mode detection
+  const isSoloTimed = gameMode === 'racing' && !isConnected && soloModeType === 'timed';
+
+  // Timed mode hook
+  const timedMode = useTimedMode({
+    duration: timedDuration,
+    withPunctuation,
+    enabled: isSoloTimed && countdown === null,
+    onComplete: (timedStats) => {
+      setFinalStats(timedStats);
+      setLocalPlayers((prev) => {
+        const updated = [...prev];
+        const idx = updated.findIndex((p) => p.id === playerId);
+        if (idx >= 0) {
+          updated[idx] = {
+            ...updated[idx],
+            progress: 100,
+            wpm: timedStats.wpm,
+            accuracy: timedStats.accuracy,
+            finished: true,
+            finishedAt: Date.now(),
+          };
+        }
+        return updated;
+      });
+    },
+  });
+
+  // Type racer hook (for text mode and multiplayer)
   const {
-    currentIndex,
-    errors,
-    stats,
-    pressedKey,
-    lastKeyCorrect,
-    progress,
+    currentIndex: textCurrentIndex,
+    errors: textErrors,
+    stats: textStats,
+    pressedKey: textPressedKey,
+    lastKeyCorrect: textLastKeyCorrect,
+    progress: textProgress,
     reset: resetTyping,
   } = useTypeRacer({
     text: raceText,
-    enabled: gameMode === 'racing' && countdown === null,
+    enabled: gameMode === 'racing' && countdown === null && !isSoloTimed,
     onProgress: (prog, wpm, accuracy) => {
       // Update local players for display
       setLocalPlayers((prev) => {
@@ -85,9 +116,11 @@ export function TypeRacerGame() {
         updateProgress(prog, wpm, accuracy, false);
       }
     },
-    onComplete: (finalStats) => {
-      setFinalStats(finalStats);
-      setGameMode('finished');
+    onComplete: (completedStats) => {
+      setFinalStats(completedStats);
+
+      // Stay on racing screen for both solo and multiplayer
+      // The racing screen will show the completion panel
 
       // Update local players
       setLocalPlayers((prev) => {
@@ -97,8 +130,8 @@ export function TypeRacerGame() {
           updated[idx] = {
             ...updated[idx],
             progress: 100,
-            wpm: finalStats.wpm,
-            accuracy: finalStats.accuracy,
+            wpm: completedStats.wpm,
+            accuracy: completedStats.accuracy,
             finished: true,
             finishedAt: Date.now(),
           };
@@ -108,10 +141,39 @@ export function TypeRacerGame() {
 
       // Update multiplayer if connected
       if (isConnected) {
-        updateProgress(100, finalStats.wpm, finalStats.accuracy, true);
+        updateProgress(100, completedStats.wpm, completedStats.accuracy, true);
       }
     },
   });
+
+  // Get the right values based on mode
+  const currentIndex = isSoloTimed ? timedMode.currentIndex : textCurrentIndex;
+  const errors = isSoloTimed ? timedMode.errors : textErrors;
+  const stats = isSoloTimed ? timedMode.stats : textStats;
+  const pressedKey = isSoloTimed ? timedMode.pressedKey : textPressedKey;
+  const lastKeyCorrect = isSoloTimed ? timedMode.lastKeyCorrect : textLastKeyCorrect;
+  const progress = isSoloTimed ? 0 : textProgress; // No progress bar in timed mode
+  const displayText = isSoloTimed ? timedMode.text : raceText;
+
+  // Check if current player has finished
+  const currentPlayerFinished = useMemo(() => {
+    if (isSoloTimed) {
+      return timedMode.timeRemaining <= 0 && timedMode.isActive === false && timedMode.currentIndex > 0;
+    }
+    return localPlayers.find((p) => p.id === playerId)?.finished || false;
+  }, [localPlayers, playerId, isSoloTimed, timedMode.timeRemaining, timedMode.isActive, timedMode.currentIndex]);
+
+  // Check if all players have finished
+  const allPlayersFinished = useMemo(() => {
+    return localPlayers.length > 0 && localPlayers.every((p) => p.finished);
+  }, [localPlayers]);
+
+  // Get current player's position
+  const currentPlayerPosition = useMemo(() => {
+    if (!currentPlayerFinished) return null;
+    const finishedPlayers = localPlayers.filter((p) => p.finished).sort((a, b) => (a.finishedAt || 0) - (b.finishedAt || 0));
+    return finishedPlayers.findIndex((p) => p.id === playerId) + 1;
+  }, [localPlayers, playerId, currentPlayerFinished]);
 
   // Handle URL room join on load
   useEffect(() => {
@@ -143,15 +205,19 @@ export function TypeRacerGame() {
     ]);
     setGameMode('racing');
     setFinalStats(null);
-  }, [playerId, playerName, resetTyping, soloText]);
+    // Reset timed mode if using it
+    if (soloModeType === 'timed') {
+      timedMode.reset();
+    }
+  }, [playerId, playerName, resetTyping, soloText, soloModeType, timedMode]);
 
   // Create multiplayer room
   const handleCreateRoom = useCallback(async () => {
-    const success = await createNewRoom();
+    const success = await createNewRoom(withPunctuation);
     if (success) {
       setGameMode('lobby');
     }
-  }, [createNewRoom]);
+  }, [createNewRoom, withPunctuation]);
 
   // Join multiplayer room
   const handleJoinRoom = useCallback(async () => {
@@ -167,163 +233,108 @@ export function TypeRacerGame() {
     await startTheRace();
   }, [startTheRace]);
 
-  // Play again
+  // Play again in solo - restart immediately
   const handlePlayAgain = useCallback(() => {
-    if (isConnected) {
-      leaveRoom();
-    }
     refreshSoloText();
     setFinalStats(null);
-    setLocalPlayers([]);
-    setGameMode('menu');
-  }, [isConnected, leaveRoom, refreshSoloText]);
+
+    // Reset and start immediately
+    if (soloModeType === 'timed') {
+      timedMode.reset();
+    } else {
+      resetTyping(soloText);
+    }
+
+    setLocalPlayers([
+      {
+        id: playerId,
+        name: playerName,
+        progress: 0,
+        wpm: 0,
+        accuracy: 100,
+        finished: false,
+      },
+    ]);
+    // Stay in racing mode - just reset
+  }, [refreshSoloText, soloModeType, timedMode, resetTyping, soloText, playerId, playerName]);
+
+  // Return to lobby for another multiplayer race
+  const handleReturnToLobby = useCallback(() => {
+    resetTyping(room?.text || '');
+    resetForNewRace();
+    setFinalStats(null);
+    // Reset all players progress
+    setLocalPlayers((prev) =>
+      prev.map((p) => ({
+        ...p,
+        progress: 0,
+        wpm: 0,
+        accuracy: 100,
+        finished: false,
+        finishedAt: undefined,
+      })),
+    );
+    setGameMode('lobby');
+  }, [resetTyping, resetForNewRace, room?.text]);
 
   // Back to menu
   const handleBackToMenu = useCallback(() => {
     if (isConnected) {
       leaveRoom();
     }
+    timedMode.reset();
     setGameMode('menu');
     setJoinRoomId('');
-  }, [isConnected, leaveRoom]);
+    setFinalStats(null);
+    setLocalPlayers([]);
+  }, [isConnected, leaveRoom, timedMode]);
 
-  // Render main menu
-  const renderMenu = () => (
-    <div className='flex flex-col items-center gap-6 animate-in fade-in-0 duration-300'>
-      <div className='text-center mb-4'>
-        <h1 className='text-3xl font-bold text-foreground mb-2'>TypeRacer</h1>
-        <p className='text-muted-foreground'>Test your typing speed</p>
-      </div>
-
-      {/* Player name input */}
-      <div className='w-full max-w-xs'>
-        <label className='text-sm text-muted-foreground mb-1 block'>Your Name</label>
-        <Input value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder='Enter your name' maxLength={20} />
-      </div>
-
-      <div className='flex flex-col gap-3 w-full max-w-xs'>
-        <Button onClick={handleStartSolo} size='lg' className='w-full gap-2'>
-          <User className='w-4 h-4' />
-          Solo Practice
-        </Button>
-
-        {hasSupabase && (
-          <Button onClick={() => setGameMode('multiplayer-menu')} variant='outline' size='lg' className='w-full gap-2'>
-            <Users className='w-4 h-4' />
-            Multiplayer
-          </Button>
-        )}
-      </div>
-    </div>
+  // Handle mode change during solo play
+  const handleModeChange = useCallback(
+    (newMode: SoloModeType) => {
+      if (newMode === soloModeType) return;
+      setSoloModeType(newMode);
+      setFinalStats(null);
+      if (newMode === 'timed') {
+        timedMode.reset();
+      } else {
+        refreshSoloText();
+        resetTyping(soloText);
+      }
+      setLocalPlayers([
+        {
+          id: playerId,
+          name: playerName,
+          progress: 0,
+          wpm: 0,
+          accuracy: 100,
+          finished: false,
+        },
+      ]);
+    },
+    [soloModeType, timedMode, refreshSoloText, resetTyping, soloText, playerId, playerName],
   );
 
-  // Render multiplayer menu
-  const renderMultiplayerMenu = () => (
-    <div className='flex flex-col items-center gap-6 animate-in fade-in-0 duration-300 w-full max-w-md'>
-      <div className='text-center'>
-        <h2 className='text-2xl font-bold text-foreground mb-2'>Multiplayer</h2>
-        <p className='text-muted-foreground text-sm'>Race against friends</p>
-      </div>
-
-      {/* Create room */}
-      <Button onClick={handleCreateRoom} size='lg' className='w-full max-w-xs gap-2' disabled={mpLoading}>
-        {mpLoading ? <Loader2 className='w-4 h-4 animate-spin' /> : <Users className='w-4 h-4' />}
-        Create Room
-      </Button>
-
-      <div className='flex items-center gap-3 w-full max-w-xs'>
-        <div className='h-px bg-border flex-1' />
-        <span className='text-xs text-muted-foreground'>or</span>
-        <div className='h-px bg-border flex-1' />
-      </div>
-
-      {/* Join room */}
-      <div className='w-full max-w-xs space-y-2'>
-        <label className='text-sm text-muted-foreground'>Join Room</label>
-        <div className='flex gap-2'>
-          <Input
-            value={joinRoomId}
-            onChange={(e) => setJoinRoomId(e.target.value.toUpperCase())}
-            placeholder='Room Code'
-            maxLength={6}
-            className='font-mono uppercase'
-          />
-          <Button onClick={handleJoinRoom} disabled={!joinRoomId.trim() || mpLoading}>
-            Join
-          </Button>
-        </div>
-      </div>
-
-      {mpError && <p className='text-sm text-destructive'>{mpError}</p>}
-
-      <Button variant='ghost' onClick={handleBackToMenu} className='gap-2'>
-        <X className='w-4 h-4' />
-        Back
-      </Button>
-    </div>
+  // Handle duration change during solo play
+  const handleDurationChange = useCallback(
+    (newDuration: TimeDuration) => {
+      if (newDuration === timedDuration) return;
+      setTimedDuration(newDuration);
+      setFinalStats(null);
+      timedMode.reset();
+      setLocalPlayers([
+        {
+          id: playerId,
+          name: playerName,
+          progress: 0,
+          wpm: 0,
+          accuracy: 100,
+          finished: false,
+        },
+      ]);
+    },
+    [timedDuration, timedMode, playerId, playerName],
   );
-
-  // Render lobby
-  const renderLobby = () =>
-    room && (
-      <LobbyScreen
-        roomId={room.id}
-        players={room.players}
-        currentPlayerId={playerId}
-        isHost={isHost}
-        onStartRace={handleStartRace}
-        isStarting={mpLoading}
-        isCountingDown={countdown !== null}
-      />
-    );
-
-  // Render racing screen
-  const renderRacing = () => (
-    <div className='flex flex-col gap-4 w-full max-w-2xl relative animate-in fade-in-0 duration-300'>
-      {/* Countdown overlay */}
-      {countdown !== null && <CountdownOverlay count={countdown} />}
-
-      {/* Stats bar */}
-      <div className='flex items-center justify-between text-sm'>
-        <div className='flex items-center gap-4'>
-          <span className='text-muted-foreground'>
-            WPM: <span className='text-foreground font-bold'>{stats.wpm}</span>
-          </span>
-          <span className='text-muted-foreground'>
-            Accuracy: <span className='text-foreground font-bold'>{stats.accuracy.toFixed(1)}%</span>
-          </span>
-        </div>
-        <div className='flex items-center gap-1'>
-          <Toggle pressed={showText} onPressedChange={setShowText} size='sm' aria-label='Toggle text display'>
-            <Type className='w-4 h-4' />
-          </Toggle>
-          <Toggle pressed={showKeyboard} onPressedChange={setShowKeyboard} size='sm' aria-label='Toggle keyboard display'>
-            <KeyboardIcon className='w-4 h-4' />
-          </Toggle>
-        </div>
-      </div>
-
-      {/* Race track */}
-      <RaceTrack players={localPlayers} currentPlayerId={playerId} />
-
-      {/* Text display */}
-      {showText && <TextDisplay text={raceText} currentIndex={currentIndex} errors={errors} />}
-
-      {/* Virtual keyboard */}
-      {showKeyboard && <Keyboard pressedKey={pressedKey} lastKeyCorrect={lastKeyCorrect} />}
-
-      {/* Progress indicator */}
-      <div className='h-2 bg-muted rounded-full overflow-hidden'>
-        <div className='h-full bg-primary transition-all duration-150 ease-out' style={{ width: `${progress}%` }} />
-      </div>
-    </div>
-  );
-
-  // Render finished screen
-  const renderFinished = () =>
-    finalStats && (
-      <ResultsScreen stats={finalStats} players={localPlayers} currentPlayerId={playerId} onPlayAgain={handlePlayAgain} isMultiplayer={isConnected} />
-    );
 
   // Controls for game layout
   const controls =
@@ -336,11 +347,83 @@ export function TypeRacerGame() {
   return (
     <GameLayout controls={controls}>
       <div className='flex flex-col items-center justify-center w-full min-h-[400px]'>
-        {gameMode === 'menu' && renderMenu()}
-        {gameMode === 'multiplayer-menu' && renderMultiplayerMenu()}
-        {gameMode === 'lobby' && renderLobby()}
-        {gameMode === 'racing' && renderRacing()}
-        {gameMode === 'finished' && renderFinished()}
+        {gameMode === 'menu' && (
+          <MainMenu onStartSolo={handleStartSolo} onMultiplayer={() => setGameMode('multiplayer-menu')} hasMultiplayer={hasSupabase} />
+        )}
+
+        {gameMode === 'multiplayer-menu' && (
+          <MultiplayerMenu
+            playerName={playerName}
+            onPlayerNameChange={setPlayerName}
+            withPunctuation={withPunctuation}
+            onPunctuationChange={setWithPunctuation}
+            joinRoomId={joinRoomId}
+            onJoinRoomIdChange={setJoinRoomId}
+            onCreateRoom={handleCreateRoom}
+            onJoinRoom={handleJoinRoom}
+            onBack={handleBackToMenu}
+            isLoading={mpLoading}
+            error={mpError}
+          />
+        )}
+
+        {gameMode === 'lobby' && room && (
+          <LobbyScreen
+            roomId={room.id}
+            players={room.players}
+            currentPlayerId={playerId}
+            isHost={isHost}
+            onStartRace={handleStartRace}
+            isStarting={mpLoading}
+            isCountingDown={countdown !== null}
+          />
+        )}
+
+        {gameMode === 'racing' && !isConnected && (
+          <SoloRacingScreen
+            soloModeType={soloModeType}
+            onModeChange={handleModeChange}
+            timedDuration={timedDuration}
+            onDurationChange={handleDurationChange}
+            showKeyboard={showKeyboard}
+            onShowKeyboardChange={setShowKeyboard}
+            displayText={displayText}
+            currentIndex={currentIndex}
+            errors={errors}
+            stats={stats}
+            pressedKey={pressedKey}
+            lastKeyCorrect={lastKeyCorrect}
+            progress={progress}
+            isTimed={isSoloTimed}
+            timeRemaining={timedMode.timeRemaining}
+            isFinished={currentPlayerFinished}
+            finalStats={finalStats}
+            onPlayAgain={handlePlayAgain}
+            countdown={countdown}
+          />
+        )}
+
+        {gameMode === 'racing' && isConnected && (
+          <MultiplayerRacingScreen
+            showKeyboard={showKeyboard}
+            onShowKeyboardChange={setShowKeyboard}
+            displayText={displayText}
+            currentIndex={currentIndex}
+            errors={errors}
+            stats={stats}
+            pressedKey={pressedKey}
+            lastKeyCorrect={lastKeyCorrect}
+            progress={progress}
+            players={localPlayers}
+            currentPlayerId={playerId}
+            isFinished={currentPlayerFinished}
+            allPlayersFinished={allPlayersFinished}
+            currentPlayerPosition={currentPlayerPosition}
+            finalStats={finalStats}
+            onReturnToLobby={handleReturnToLobby}
+            countdown={countdown}
+          />
+        )}
       </div>
     </GameLayout>
   );

@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from '@tanstack/react-router';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Home } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

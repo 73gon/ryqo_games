@@ -1,66 +1,121 @@
 {
   "navbar": {
-    "title": "Games"
+    "title": "Games",
+    "tabs": {
+      "home": "Home",
+      "arcade": "Arcade",
+      "typeracer": "TypeRacer"
+    }
   },
   "language": {
     "select": "Select Language",
     "german": "German",
     "english": "English"
   },
-  "footer": {
-    "copyright": "Copyright © 2025. All rights reserved.",
-    "disclaimer": "This is a template project."
-  },
+  "footer": {},
   "games": {
     "hub": {
       "title": "Mini-Games Hub",
       "subtitle": "A collection of classic arcade and puzzle games built with React, PixiJS, and Tailwind CSS."
     },
-    "titles": {
-      "snake": "Snake",
-      "tetris": "Tetris",
-      "pacman": "Pac-Man",
-      "2048": "2048",
-      "minesweeper": "Minesweeper",
-      "pong": "Pong",
-      "breakout": "Breakout"
-    },
-    "descriptions": {
-      "snake": "Classic snake game. Eat apples, grow longer, don't hit the wall.",
-      "tetris": "Stack the falling blocks to clear lines.",
-      "pacman": "Eat all the dots while avoiding ghosts.",
-      "2048": "Combine tiles to reach the number 2048.",
-      "minesweeper": "Find the mines without detonating them.",
-      "pong": "Classic table tennis arcade game.",
-      "breakout": "Destroy all bricks with the ball."
-    },
-    "types": {
-      "arcade": "Arcade",
-      "puzzle": "Puzzle"
-    },
-    "common": {
-      "score": "Score",
-      "start": "Start",
-      "restart": "Restart",
-      "playing": "Playing",
-      "gameOver": "GAME OVER",
-      "youWin": "You Win!",
-      "comingSoon": "Coming Soon",
-      "controls": {
-        "move": "Use Arrow Keys to move",
-        "reveal": "Left click to reveal, Right click to flag",
-        "tiles": "Use Arrow Keys to move tiles"
-      }
-    },
     "snake": {
+      "meta": {
+        "title": "Snake",
+        "description": "Play the classic Snake game! Eat apples, grow longer, and avoid hitting the walls."
+      },
+      "name": "Snake",
+      "description": "Classic snake game. Eat apples, grow longer, don't hit the wall.",
+      "type": "Arcade",
       "leaderboard": "Leaderboard",
       "clear": "Clear",
       "restartHint": "Press Space or click Play to restart",
       "apples": "Apples",
-      "speed": "Speed"
+      "speed": "Speed",
+      "controls": {
+        "up": "Up Arrow to move up",
+        "down": "Down Arrow to move down",
+        "left": "Left Arrow to move left",
+        "right": "Right Arrow to move right"
+      }
+    },
+    "tetris": {
+      "meta": {
+        "title": "Tetris",
+        "description": "Stack the falling blocks to clear lines."
+      },
+      "name": "Tetris",
+      "description": "Stack the falling blocks to clear lines.",
+      "type": "Arcade"
+    },
+    "typeracer": {
+      "meta": {
+        "title": "TypeRacer",
+        "description": "Race against the clock by typing words accurately and quickly."
+      },
+      "name": "TypeRacer",
+      "description": "Type words quickly and accurately."
+    },
+    "breakout": {
+      "meta": {
+        "title": "Breakout",
+        "description": "Destroy all bricks with the ball."
+      },
+      "name": "Breakout",
+      "description": "Classic breakout game. Destroy all bricks with the ball.",
+      "type": "Arcade"
+    },
+    "minesweeper": {
+      "meta": {
+        "title": "Minesweeper",
+        "description": "Play the classic Minesweeper game! Find the mines without detonating them. Enjoy this timeless puzzle game on Mini-Games Hub."
+      },
+      "name": "Minesweeper",
+      "description": "Classic minesweeper game. Find the mines without detonating them.",
+      "type": "Arcade",
+      "controls": {
+        "reveal": "Left Click to reveal",
+        "flag": "Right Click to flag"
+      }
+    },
+    "2048": {
+      "meta": {
+        "title": "2048",
+        "description": "Combine tiles to reach the number 2048. Enjoy this classic puzzle game"
+      },
+      "name": "2048",
+      "description": "Combine tiles to reach the number 2048.",
+      "type": "Puzzle"
+    },
+    "pacman": {
+      "meta": {
+        "title": "Pacman",
+        "description": "Navigate the maze, eat all the dots, and avoid the ghosts."
+      },
+      "name": "Pacman",
+      "description": "Navigate the maze, eat all the dots, and avoid the ghosts.",
+      "type": "Arcade"
+    },
+    "pong": {
+      "meta": {
+        "title": "Pong",
+        "description": "Classic pong game. Bounce the ball past your opponent to score points."
+      },
+      "name": "Pong",
+      "description": "Classic pong game. Bounce the ball past your opponent to score points.",
+      "type": "Arcade"
+    },
+    "common": {
+      "score": "Score",
+      "start": "Start",
+      "play": "Play",
+      "restart": "Restart",
+      "playing": "Playing",
+      "gameOver": "GAME OVER",
+      "youWin": "You Win!",
+      "comingSoon": "Coming Soon"
     }
   },
   "kbd": {
-    "space": "space"
+    "space": "Space"
   }
 }

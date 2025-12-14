@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { TypeRacerGame } from '@/games/typeracer';
+import { createFileRoute, Outlet } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/games/typeracer')({
-  component: TypeRacerGame,
+  component: () => <Outlet />,
 });

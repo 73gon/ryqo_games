@@ -68,16 +68,21 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       onGameRestart,
       onStateChange,
       palette = 'default',
+      cellSize = CELL_SIZE,
+      sensitivity = { dasMultiplier: 1, arrMultiplier: 1 },
       onLineClear,
       onMove,
       onSoftDrop,
       onHardDrop,
       onRotate,
       onHold,
-      sideControl,
     },
     ref,
   ) => {
+    // Derived DAS/ARR from sensitivity
+    const effectiveDAS = Math.round(DAS * sensitivity.dasMultiplier);
+    const effectiveARR = Math.round(ARR * sensitivity.arrMultiplier);
+
     // Canvas refs
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const previewCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -341,8 +346,8 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
       }
 
       const sincePress = now - lastHorizontalPressRef.current;
-      if (sincePress < DAS) return;
-      if (now - lastAutoShiftRef.current >= ARR) {
+      if (sincePress < effectiveDAS) return;
+      if (now - lastAutoShiftRef.current >= effectiveARR) {
         if (moveHorizontal(dir)) {
           lastAutoShiftRef.current = now;
         }
@@ -618,8 +623,8 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
     useEffect(() => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      canvas.width = GRID_WIDTH * CELL_SIZE;
-      canvas.height = GRID_HEIGHT * CELL_SIZE;
+      canvas.width = GRID_WIDTH * cellSize;
+      canvas.height = GRID_HEIGHT * cellSize;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
       ctxRef.current = ctx;
@@ -688,8 +693,8 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
         <div className='relative'>
           <canvas
             ref={canvasRef}
-            width={GRID_WIDTH * CELL_SIZE}
-            height={GRID_HEIGHT * CELL_SIZE}
+            width={GRID_WIDTH * cellSize}
+            height={GRID_HEIGHT * cellSize}
             className='border-2 border-border rounded-lg shadow-sm'
             style={{
               backgroundColor: paletteRef.current.background,
@@ -711,8 +716,6 @@ export const TetrisCore = forwardRef<TetrisGameHandle, TetrisCoreProps>(
             <div className='text-[11px] font-semibold uppercase tracking-wide text-foreground/80'>Hold</div>
             <canvas ref={holdCanvasRef} width={4 * PREVIEW_CELL_SIZE} height={4 * PREVIEW_CELL_SIZE} className='mt-2' />
           </div>
-
-          {sideControl && <div className='mt-2 flex justify-end'>{sideControl}</div>}
         </div>
       </div>
     );
