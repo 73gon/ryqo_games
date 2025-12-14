@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { ThemeProvider } from 'next-themes';
 import { RouterProvider } from '@tanstack/react-router';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { router } from '@/router';
 import { SettingsProvider } from '@/lib/settings.tsx';
 
@@ -15,6 +16,7 @@ createRoot(document.getElementById('app')!).render(
       <SettingsProvider>
         <RouterProvider router={router} />
         <Analytics />
+        <SpeedInsights />
       </SettingsProvider>
     </ThemeProvider>
   </StrictMode>,
