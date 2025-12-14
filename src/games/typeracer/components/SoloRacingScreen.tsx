@@ -74,7 +74,7 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
   countdown,
 }: SoloRacingScreenProps) {
   return (
-    <div className='flex flex-col gap-4 w-full relative animate-in fade-in-0 duration-300'>
+    <div className='flex flex-col gap-4 w-full max-w-7xl relative animate-in fade-in-0 duration-300'>
       {/* Countdown overlay */}
       {countdown !== null && <CountdownOverlay count={countdown} />}
 

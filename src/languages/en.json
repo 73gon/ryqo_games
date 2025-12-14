@@ -13,6 +13,39 @@
     "english": "English"
   },
   "footer": {},
+  "settings": {
+    "title": "Settings",
+    "reset": "Reset to Default",
+    "customize": "Customize your experience",
+    "interface": {
+      "label": "Interface",
+      "pageWidth": {
+        "label": "Page Width",
+        "description": "Adjust the width of the content area",
+        "options": {
+          "narrow": "Narrow",
+          "medium": "Medium",
+          "wide": "Wide",
+          "full": "Full"
+        }
+      },
+      "font": {
+        "label": "Font",
+        "description": "Choose your preferred font style"
+      },
+      "textcase": {
+        "label": "Text Case",
+        "description": "Choose your preferred text capitalization"
+      }
+    },
+    "appearance": {
+      "label": "Appearance",
+      "accentColor": {
+        "label": "Theme",
+        "description": "Select a theme color for the application."
+      }
+    }
+  },
   "games": {
     "hub": {
       "title": "Mini-Games Hub",

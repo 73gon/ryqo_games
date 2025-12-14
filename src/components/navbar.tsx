@@ -90,6 +90,8 @@ export function Navbar() {
                           <span className='text-foreground px-1'>/</span>
                           {gameNameMap[gameName] || gameName}
                         </>
+                      ) : router.location.pathname === '/settings' ? (
+                        t('settings.title', 'Settings')
                       ) : (
                         t('navbar.title')
                       )}

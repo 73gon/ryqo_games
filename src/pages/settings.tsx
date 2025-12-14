@@ -4,7 +4,7 @@ import { RotateCcw, Check, CaseUpper, CaseLower, Type } from 'lucide-react';
 import { useSettings, type AppSettings } from '@/lib/settings';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ToggleGroup, Toggle } from '@/components/ui/toggle-group';
 import { cn } from '@/lib/utils';
 
 const containerVariants = {
@@ -27,10 +27,10 @@ export function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useSettings();
 
   const pageWidthOptions: { value: AppSettings['pageWidth']; label: string }[] = [
-    { value: 'narrow', label: t('settings.pageWidth.narrow', 'Narrow') },
-    { value: 'medium', label: t('settings.pageWidth.medium', 'Medium') },
-    { value: 'wide', label: t('settings.pageWidth.wide', 'Wide') },
-    { value: 'full', label: t('settings.pageWidth.full', 'Full Width') },
+    { value: 'narrow', label: t('settings.interface.pageWidth.options.narrow', 'Narrow') },
+    { value: 'medium', label: t('settings.interface.pageWidth.options.medium', 'Medium') },
+    { value: 'wide', label: t('settings.interface.pageWidth.options.wide', 'Wide') },
+    { value: 'full', label: t('settings.interface.pageWidth.options.full', 'Full Width') },
   ];
 
   const fontOptions: { value: AppSettings['font']; label: string }[] = [
@@ -49,13 +49,12 @@ export function SettingsPage() {
   ];
 
   return (
-    <div className='w-full py-8 px-4 sm:px-6'>
-      <motion.div variants={containerVariants} initial='hidden' animate='visible' className='space-y-8 max-w-3xl mx-auto'>
+    <div className='w-full max-w-full h-full flex grow px-4 sm:px-6 py-8 items-center'>
+      <motion.div variants={containerVariants} initial='hidden' animate='visible' className='space-y-8 max-w-3xl mx-auto h-full'>
         {/* Header */}
         <motion.div variants={itemVariants} className='flex items-center justify-between pb-6 border-b'>
           <div>
-            <h1 className='text-3xl font-bold tracking-tight'>{t('settings.title', 'Settings')}</h1>
-            <p className='text-muted-foreground mt-1'>{t('settings.description', 'Customize your experience')}</p>
+            <p className='text-muted-foreground mt-1'>{t('settings.customize', 'Customize your experience')}</p>
           </div>
           <Button variant='ghost' size='sm' onClick={resetSettings} className='text-muted-foreground hover:text-foreground'>
             <RotateCcw className='h-4 w-4 mr-2' />
@@ -66,7 +65,7 @@ export function SettingsPage() {
         {/* Interface Section */}
         <div className='space-y-6'>
           <motion.h2 variants={itemVariants} className='text-lg font-semibold text-foreground/90'>
-            Interface
+            {t('settings.interface.label', 'Interface')}
           </motion.h2>
 
           {/* Page Width */}
@@ -75,8 +74,8 @@ export function SettingsPage() {
             className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors'
           >
             <div className='space-y-0.5'>
-              <label className='text-base font-medium'>{t('settings.pageWidth.title', 'Page Width')}</label>
-              <p className='text-sm text-muted-foreground'>{t('settings.pageWidth.description', 'Adjust the content width')}</p>
+              <label className='text-base font-medium'>{t('settings.interface.pageWidth.label', 'Page Width')}</label>
+              <p className='text-sm text-muted-foreground'>{t('settings.interface.pageWidth.description', 'Adjust the content width')}</p>
             </div>
             <div>
               <Select value={settings.pageWidth} onValueChange={(value: AppSettings['pageWidth']) => updateSettings({ pageWidth: value })}>
@@ -100,8 +99,8 @@ export function SettingsPage() {
             className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors'
           >
             <div className='space-y-0.5'>
-              <label className='text-base font-medium'>{t('settings.font.title', 'Font Family')}</label>
-              <p className='text-sm text-muted-foreground'>{t('settings.font.description', 'Choose your preferred typeface')}</p>
+              <label className='text-base font-medium'>{t('settings.interface.font.label', 'Font Family')}</label>
+              <p className='text-sm text-muted-foreground'>{t('settings.interface.font.description', 'Choose your preferred typeface')}</p>
             </div>
             <div>
               <Select value={settings.font} onValueChange={(value: AppSettings['font']) => updateSettings({ font: value })}>
@@ -133,27 +132,28 @@ export function SettingsPage() {
             className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors'
           >
             <div className='space-y-0.5'>
-              <label className='text-base font-medium'>Text Case</label>
-              <p className='text-sm text-muted-foreground'>Choose your preferred text capitalization</p>
+              <label className='text-base font-medium'>{t('settings.interface.textcase.label', 'Text Case')}</label>
+              <p className='text-sm text-muted-foreground'>
+                {t('settings.interface.textcase.description', 'Choose your preferred text capitalization')}
+              </p>
             </div>
             <div>
               <ToggleGroup
-                type='single'
                 variant='outline'
-                value={settings.textCase}
+                value={settings.textCase ? [settings.textCase] : []}
                 onValueChange={(value) => {
-                  if (value) updateSettings({ textCase: value as AppSettings['textCase'] });
+                  if (value && value.length > 0) updateSettings({ textCase: value[0] as AppSettings['textCase'] });
                 }}
               >
-                <ToggleGroupItem value='normal' aria-label='Normal case'>
+                <Toggle value='normal' aria-label='Normal case'>
                   <Type className='h-4 w-4' />
-                </ToggleGroupItem>
-                <ToggleGroupItem value='lowercase' aria-label='Lowercase'>
+                </Toggle>
+                <Toggle value='lowercase' aria-label='Lowercase'>
                   <CaseLower className='h-4 w-4' />
-                </ToggleGroupItem>
-                <ToggleGroupItem value='uppercase' aria-label='Uppercase'>
+                </Toggle>
+                <Toggle value='uppercase' aria-label='Uppercase'>
                   <CaseUpper className='h-4 w-4' />
-                </ToggleGroupItem>
+                </Toggle>
               </ToggleGroup>
             </div>
           </motion.div>
@@ -162,14 +162,16 @@ export function SettingsPage() {
         {/* Appearance Section */}
         <div className='space-y-6 pt-6'>
           <motion.h2 variants={itemVariants} className='text-lg font-semibold text-foreground/90'>
-            Appearance
+            {t('settings.appearance.label', 'Appearance')}
           </motion.h2>
 
           {/* Theme */}
           <motion.div variants={itemVariants} className='space-y-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors'>
             <div className='space-y-0.5'>
-              <label className='text-base font-medium'>{t('settings.theme.title', 'Accent Color')}</label>
-              <p className='text-sm text-muted-foreground'>{t('settings.theme.description', 'Select an accent color for the interface')}</p>
+              <label className='text-base font-medium'>{t('settings.appearance.accentColor.label', 'Accent Color')}</label>
+              <p className='text-sm text-muted-foreground'>
+                {t('settings.appearance.accentColor.description', 'Select an accent color for the interface')}
+              </p>
             </div>
 
             <div className='flex flex-wrap gap-3 pt-2'>

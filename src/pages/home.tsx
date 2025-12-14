@@ -64,8 +64,8 @@ export function Home() {
   ];
 
   return (
-    <div className='bg-background'>
-      <div className='container mx-auto py-12 px-4'>
+    <div className='flex flex-col flex-1 justify-center'>
+      <div className='py-12 px-4'>
         <div className='mb-12 text-center'>
           <h1 className='text-4xl font-extrabold tracking-tight lg:text-5xl mb-4'>Mini-Games Hub</h1>
           <p className='text-xl text-muted-foreground max-w-2xl mx-auto'>

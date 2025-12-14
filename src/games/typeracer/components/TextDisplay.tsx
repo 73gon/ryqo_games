@@ -30,31 +30,53 @@ export const TextDisplay = memo(function TextDisplay({ text, currentIndex, error
 
   return (
     <motion.div
-      className='font-mono text-lg leading-relaxed py-2 select-none whitespace-pre-wrap wrap-break-word w-full max-w-full overflow-hidden min-h-[4.5em] max-h-[4.5em]'
+      className='text-lg leading-relaxed py-2 select-none whitespace-pre-wrap w-full max-w-full overflow-hidden min-h-[4.5em] max-h-[5em] text-justify'
       layout
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
-      {displayText.split('').map((char, index) => {
-        let className = 'transition-colors duration-75 ';
-
-        if (index < adjustedCurrentIndex) {
-          if (adjustedErrors.has(index)) {
-            className += 'text-destructive bg-destructive/20';
-          } else {
-            className += 'text-primary';
-          }
-        } else if (index === adjustedCurrentIndex) {
-          className += 'bg-primary/30 text-foreground animate-pulse';
-        } else {
-          className += 'text-muted-foreground';
+      {(() => {
+        const tokens: { text: string; start: number }[] = [];
+        const re = /(\S+|\s+)/g;
+        let m: RegExpExecArray | null;
+        while ((m = re.exec(displayText)) !== null) {
+          tokens.push({ text: m[0], start: m.index });
         }
 
-        return (
-          <span key={index} className={className}>
-            {char === ' ' ? '\u00A0' : char}
-          </span>
-        );
-      })}
+        return tokens.map((token) => {
+          const isWhitespace = /^\s+$/.test(token.text);
+
+          const wrapperClass = isWhitespace ? undefined : 'inline-block whitespace-nowrap';
+
+          return (
+            <span key={token.start} className={wrapperClass}>
+              {token.text.split('').map((char, i) => {
+                const index = token.start + i;
+                let className = 'transition-colors duration-75 ';
+
+                if (index < adjustedCurrentIndex) {
+                  if (adjustedErrors.has(index)) {
+                    className += 'text-destructive bg-destructive/20';
+                  } else {
+                    className += 'text-primary';
+                  }
+                } else if (index === adjustedCurrentIndex) {
+                  className += 'bg-primary/30 text-foreground animate-pulse';
+                } else {
+                  className += 'text-muted-foreground';
+                }
+
+                const displayChar = char === ' ' ? ' ' : char;
+
+                return (
+                  <span key={index} className={className}>
+                    {displayChar}
+                  </span>
+                );
+              })}
+            </span>
+          );
+        });
+      })()}
     </motion.div>
   );
 });

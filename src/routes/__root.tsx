@@ -21,7 +21,7 @@ function RootComponent() {
             key={router.location.pathname}
             initial={{ opacity: 0, transition: { duration: 0.2 } }}
             animate={{ opacity: 1, transition: { duration: 0.2 } }}
-            className={`flex-1 w-full ${getPageWidthClass(settings.pageWidth)}`}
+            className={`flex-1 flex flex-col w-full ${getPageWidthClass(settings.pageWidth)}`}
           >
             <Outlet />
           </motion.div>
