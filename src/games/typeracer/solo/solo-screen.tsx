@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, Toggle as ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Keyboard as KeyboardIcon, RotateCcw, Clock, FileText, Infinity } from 'lucide-react';
-import { TextDisplay } from './TextDisplay';
-import { Keyboard } from './Keyboard';
-import { CountdownOverlay } from './CountdownOverlay';
+import { TextDisplay } from '../components/TextDisplay';
+import { Keyboard } from '../components/Keyboard';
+import { CountdownOverlay } from '../components/CountdownOverlay';
 import type { GameStats, SoloModeType, TimeDuration } from '../types';
 
 interface SoloRacingScreenProps {
@@ -82,26 +82,40 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
         <div className='flex items-center gap-4'>
           {/* Timer for timed mode */}
           {isTimed && (
-            <span className='text-muted-foreground'>
-              time: <span className={`font-bold ${timeRemaining <= 5 ? 'text-red-500' : 'text-foreground'}`}>{timeRemaining}s</span>
-            </span>
+            <AnimatePresence mode='popLayout'>
+              <motion.span layout className='text-muted-foreground'>
+                time: <span className={`font-bold ${timeRemaining <= 5 ? 'text-red-500' : 'text-foreground'}`}>{timeRemaining}s</span>
+              </motion.span>
+            </AnimatePresence>
           )}
           {/* Elapsed time for endless mode */}
           {isEndless && stats.timeElapsed > 0 && (
-            <span className='text-muted-foreground'>
-              time: <span className='text-foreground font-bold'>{Math.floor(stats.timeElapsed)}s</span>
-            </span>
+            <AnimatePresence mode='popLayout'>
+              <motion.span layout className='text-muted-foreground'>
+                time: <span className='text-foreground font-bold'>{Math.floor(stats.timeElapsed)}s</span>
+              </motion.span>
+            </AnimatePresence>
           )}
-          <span className='text-muted-foreground'>
-            wpm: <span className='text-foreground font-bold'>{stats.wpm}</span>
-          </span>
-          <span className='text-muted-foreground'>
-            accuracy: <span className='text-foreground font-bold'>{stats.accuracy.toFixed(1)}%</span>
-          </span>
+          <AnimatePresence mode='popLayout'>
+            <motion.span layout className='text-muted-foreground'>
+              wpm: <span className='text-foreground font-bold'>{stats.wpm}</span>
+            </motion.span>
+            <motion.span layout className='text-muted-foreground'>
+              accuracy:{' '}
+              <motion.span layout className='text-foreground font-bold'>
+                {stats.accuracy.toFixed(1)}%
+              </motion.span>
+            </motion.span>
+          </AnimatePresence>
           {isEndless && (
-            <span className='text-muted-foreground'>
-              chars: <span className='text-foreground font-bold'>{stats.correctChars}</span>
-            </span>
+            <AnimatePresence mode='popLayout'>
+              <motion.span layout className='text-muted-foreground'>
+                chars:{' '}
+                <motion.span layout className='text-foreground font-bold'>
+                  {stats.correctChars}
+                </motion.span>
+              </motion.span>
+            </AnimatePresence>
           )}
         </div>
         <div className='flex items-center gap-2'>

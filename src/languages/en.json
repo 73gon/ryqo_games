@@ -145,7 +145,8 @@
       "playing": "Playing",
       "gameOver": "GAME OVER",
       "youWin": "You Win!",
-      "comingSoon": "Coming Soon"
+      "comingSoon": "Coming Soon",
+      "goback": "Go Back"
     }
   },
   "kbd": {
