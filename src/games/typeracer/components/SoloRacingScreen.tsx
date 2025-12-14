@@ -62,7 +62,6 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
   stats,
   pressedKey,
   lastKeyCorrect,
-  progress,
   isTimed,
   isEndless = false,
   timeRemaining,
