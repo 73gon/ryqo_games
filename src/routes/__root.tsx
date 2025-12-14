@@ -3,9 +3,9 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import { AnimatePresence, motion } from 'motion/react';
 
-import { Navbar } from '@/components/header';
+import { Navbar } from '@/components/navbar';
 import { Toaster } from '@/components/ui/sonner';
-import { Footer } from '@/components/foot';
+import { Footer } from '@/components/footer';
 import { useSettings, getPageWidthClass } from '@/lib/settings';
 
 function RootComponent() {
