@@ -65,7 +65,7 @@ export function Navbar() {
         <div className='px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
             <motion.div layout className='flex items-center gap-4'>
-              <Link to='/' className='flex items-center gap-2 hover:opacity-80 transition-opacity'>
+              <Link to='/' preload='viewport' className='flex items-center gap-2 hover:opacity-80 transition-opacity'>
                 <motion.div layout className='shrink-0'>
                   <Ryqo className='h-8 w-8' />
                 </motion.div>
@@ -106,7 +106,7 @@ export function Navbar() {
                   {/* Home Link */}
                   <NavigationMenuItem>
                     <NavigationMenuLink asChild className={navigationMenuTriggerStyle()}>
-                      <Link to='/'>
+                      <Link to='/' preload='viewport'>
                         <span>{t('navbar.tabs.home')}</span>
                       </Link>
                     </NavigationMenuLink>

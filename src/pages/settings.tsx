@@ -78,7 +78,7 @@ export function SettingsPage() {
               <label className='text-base font-medium'>{t('settings.pageWidth.title', 'Page Width')}</label>
               <p className='text-sm text-muted-foreground'>{t('settings.pageWidth.description', 'Adjust the content width')}</p>
             </div>
-            <div className='w-full sm:w-[200px]'>
+            <div>
               <Select value={settings.pageWidth} onValueChange={(value: AppSettings['pageWidth']) => updateSettings({ pageWidth: value })}>
                 <SelectTrigger>
                   <SelectValue />
@@ -103,7 +103,7 @@ export function SettingsPage() {
               <label className='text-base font-medium'>{t('settings.font.title', 'Font Family')}</label>
               <p className='text-sm text-muted-foreground'>{t('settings.font.description', 'Choose your preferred typeface')}</p>
             </div>
-            <div className='w-full sm:w-[200px]'>
+            <div>
               <Select value={settings.font} onValueChange={(value: AppSettings['font']) => updateSettings({ font: value })}>
                 <SelectTrigger>
                   <SelectValue />
