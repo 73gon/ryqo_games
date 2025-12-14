@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'motion/react';
 
 import { Navbar } from '@/components/header';
 import { Toaster } from '@/components/ui/sonner';
-import { Footer } from '@/components/footer';
+import { Footer } from '@/components/foot';
 import { useSettings, getPageWidthClass } from '@/lib/settings';
 
 function RootComponent() {
