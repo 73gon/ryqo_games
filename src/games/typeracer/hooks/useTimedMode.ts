@@ -160,6 +160,28 @@ export function useTimedMode({ duration, withPunctuation, enabled, onComplete }:
     }, 100);
   }, []);
 
+  // Handle backspace
+  const handleBackspace = useCallback(() => {
+    if (!enabledRef.current || !isActiveRef.current || currentIndexRef.current === 0) return;
+
+    const newIndex = currentIndexRef.current - 1;
+    setCurrentIndex(newIndex);
+    currentIndexRef.current = newIndex;
+
+    setErrors((prev) => {
+      const next = new Set(prev);
+      next.delete(newIndex); // Remove error at the new (previous) index
+      return next;
+    });
+
+    if (totalCharsTypedRef.current > 0) {
+      totalCharsTypedRef.current--;
+    }
+
+    setPressedKey(null);
+    setLastKeyCorrect(null);
+  }, []);
+
   // Timer countdown
   useEffect(() => {
     if (!isActive || !enabled) return;
@@ -186,7 +208,13 @@ export function useTimedMode({ duration, withPunctuation, enabled, onComplete }:
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!enabledRef.current) return;
+      if (!enabledRef.current || !isActiveRef.current || timeRemainingRef.current <= 0) return;
+
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        handleBackspace();
+        return;
+      }
 
       if (e.key.length === 1 || e.key === ' ') {
         e.preventDefault();
@@ -196,7 +224,7 @@ export function useTimedMode({ duration, withPunctuation, enabled, onComplete }:
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyPress]);
+  }, [handleKeyPress, handleBackspace]);
 
   // Reset when duration or punctuation changes
   useEffect(() => {

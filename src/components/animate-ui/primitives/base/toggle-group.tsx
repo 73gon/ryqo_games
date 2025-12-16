@@ -5,12 +5,7 @@ import { Toggle as TogglePrimitive } from '@base-ui-components/react/toggle';
 import { ToggleGroup as ToggleGroupPrimitive } from '@base-ui-components/react/toggle-group';
 import { AnimatePresence, motion, type HTMLMotionProps } from 'motion/react';
 
-import {
-  Highlight,
-  HighlightItem,
-  type HighlightItemProps,
-  type HighlightProps,
-} from '@/components/animate-ui/primitives/effects/highlight';
+import { Highlight, HighlightItem, type HighlightItemProps, type HighlightProps } from '@/components/animate-ui/primitives/effects/highlight';
 import { getStrictContext } from '@/lib/get-strict-context';
 import { useControlledState } from '@/hooks/use-controlled-state';
 
@@ -21,8 +16,7 @@ type ToggleGroupContextType = {
   multiple: boolean | undefined;
 };
 
-const [ToggleGroupProvider, useToggleGroup] =
-  getStrictContext<ToggleGroupContextType>('ToggleGroupContext');
+const [ToggleGroupProvider, useToggleGroup] = getStrictContext<ToggleGroupContextType>('ToggleGroupContext');
 
 type ToggleGroupProps = React.ComponentProps<typeof ToggleGroupPrimitive>;
 
@@ -37,30 +31,14 @@ function ToggleGroup(props: ToggleGroupProps) {
 
   return (
     <ToggleGroupProvider value={{ value, setValue, multiple: props.multiple }}>
-      <ToggleGroupPrimitive
-        data-slot="toggle-group"
-        {...props}
-        onValueChange={setValue}
-      />
+      <ToggleGroupPrimitive data-slot='toggle-group' {...props} onValueChange={setValue} />
     </ToggleGroupProvider>
   );
 }
 
-type ToggleProps = Omit<
-  React.ComponentProps<typeof TogglePrimitive>,
-  'render'
-> &
-  HTMLMotionProps<'button'>;
+type ToggleProps = Omit<React.ComponentProps<typeof TogglePrimitive>, 'render'> & HTMLMotionProps<'button'>;
 
-function Toggle({
-  value,
-  pressed,
-  defaultPressed,
-  onPressedChange,
-  nativeButton,
-  disabled,
-  ...props
-}: ToggleProps) {
+function Toggle({ value, pressed, defaultPressed, onPressedChange, nativeButton, disabled, ...props }: ToggleProps) {
   return (
     <TogglePrimitive
       value={value}
@@ -69,35 +47,17 @@ function Toggle({
       defaultPressed={defaultPressed}
       onPressedChange={onPressedChange}
       nativeButton={nativeButton}
-      render={
-        <motion.button
-          data-slot="toggle"
-          whileTap={{ scale: 0.95 }}
-          {...props}
-        />
-      }
+      render={<motion.button data-slot='toggle' whileTap={{ scale: 0.95 }} {...props} />}
     />
   );
 }
 
 type ToggleGroupHighlightProps = Omit<HighlightProps, 'controlledItems'>;
 
-function ToggleGroupHighlight({
-  transition = { type: 'spring', stiffness: 200, damping: 25 },
-  ...props
-}: ToggleGroupHighlightProps) {
+function ToggleGroupHighlight({ transition = { type: 'spring', stiffness: 200, damping: 25 }, ...props }: ToggleGroupHighlightProps) {
   const { value } = useToggleGroup();
 
-  return (
-    <Highlight
-      data-slot="toggle-group-highlight"
-      controlledItems
-      value={value?.[0] ?? null}
-      exitDelay={0}
-      transition={transition}
-      {...props}
-    />
-  );
+  return <Highlight data-slot='toggle-group-highlight' controlledItems value={value?.[0] ?? null} exitDelay={0} {...props} />;
 }
 
 type ToggleHighlightProps = HighlightItemProps &
@@ -110,11 +70,7 @@ function ToggleHighlight({ children, style, ...props }: ToggleHighlightProps) {
 
   if (!multiple) {
     return (
-      <HighlightItem
-        data-slot="toggle-highlight"
-        style={{ inset: 0, ...style }}
-        {...props}
-      >
+      <HighlightItem data-slot='toggle-highlight' style={{ inset: 0, ...style }} {...props}>
         {children}
       </HighlightItem>
     );
@@ -138,7 +94,7 @@ function ToggleHighlight({ children, style, ...props }: ToggleHighlightProps) {
         <AnimatePresence>
           {isActive && (
             <motion.div
-              data-slot="toggle-highlight"
+              data-slot='toggle-highlight'
               style={{ position: 'absolute', inset: 0, zIndex: 0, ...style }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}

@@ -3,6 +3,7 @@ import { useTheme } from 'next-themes';
 import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { motion } from 'motion/react';
 
 export function ModeToggle() {
   const { setTheme, resolvedTheme } = useTheme();
@@ -83,10 +84,12 @@ export function ModeToggle() {
   }, []);
 
   return (
-    <Button variant='outline' size='sm' onClick={toggleTheme}>
-      <Sun className='h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all duration-600 dark:scale-0 dark:-rotate-90' />
-      <Moon className='absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all duration-600 dark:scale-100 dark:rotate-0' />
-      <span className='sr-only'>toggle theme</span>
+    <Button variant='ghost' size='icon' className='h-9 w-9 p-0' onClick={toggleTheme}>
+      <motion.div className='h-9 w-9 flex items-center justify-center' initial={{ rotate: 0 }} whileHover={{ rotate: 30 }} whileTap={{ rotate: -10 }}>
+        <Sun className='h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all duration-600 dark:scale-0 dark:-rotate-90' />
+        <Moon className='absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all duration-600 dark:scale-100 dark:rotate-0' />
+        <span className='sr-only'>toggle theme</span>
+      </motion.div>
     </Button>
   );
 }

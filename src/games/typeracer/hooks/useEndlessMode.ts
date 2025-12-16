@@ -19,12 +19,12 @@ interface EndlessModeState {
   lastKeyCorrect: boolean | null;
   isActive: boolean;
   scrollOffset: number;
+  setScrollOffset: (offset: number) => void;
   reset: () => void;
   stop: () => void;
 }
 
 const WORDS_PER_BATCH = 50;
-const SCROLL_THRESHOLD_CHARS = 100; // Scroll after typing this many chars
 
 export function useEndlessMode({ enabled, withPunctuation = false, onProgress }: UseEndlessModeOptions): EndlessModeState {
   const [text, setText] = useState('');
@@ -83,6 +83,8 @@ export function useEndlessMode({ enabled, withPunctuation = false, onProgress }:
   }, [enabled, text, currentIndex, generateText]);
 
   // Calculate scroll offset when typing progresses
+  // Removed in favor of visual scrolling handled by TextDisplay
+  /*
   useEffect(() => {
     if (currentIndex > SCROLL_THRESHOLD_CHARS) {
       // Find a good word boundary to scroll to
@@ -97,6 +99,7 @@ export function useEndlessMode({ enabled, withPunctuation = false, onProgress }:
       }
     }
   }, [currentIndex, text]);
+  */
 
   // Update stats
   const updateStats = useCallback(() => {
@@ -222,6 +225,7 @@ export function useEndlessMode({ enabled, withPunctuation = false, onProgress }:
     lastKeyCorrect,
     isActive,
     scrollOffset,
+    setScrollOffset,
     reset,
     stop,
   };

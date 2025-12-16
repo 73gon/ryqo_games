@@ -92,9 +92,7 @@ function ToggleGroupHighlight({ transition = { type: 'spring', stiffness: 200, d
   const { value } = useToggleGroup();
   const singleValue = Array.isArray(value) ? value[0] : value;
 
-  return (
-    <Highlight data-slot='toggle-group-highlight' controlledItems value={singleValue ?? null} exitDelay={0} transition={transition} {...props} />
-  );
+  return <Highlight data-slot='toggle-group-highlight' controlledItems value={singleValue ?? null} exitDelay={0} {...props} />;
 }
 
 type ToggleHighlightProps = HighlightItemProps &

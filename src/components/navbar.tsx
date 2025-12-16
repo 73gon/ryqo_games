@@ -56,11 +56,6 @@ export function Navbar() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
-        transition={{
-          type: 'spring',
-          stiffness: 300,
-          damping: 30,
-        }}
       >
         <div className='px-4 sm:px-6 lg:px-8'>
           <div className='flex h-16 items-center justify-between'>
@@ -76,11 +71,6 @@ export function Navbar() {
                       initial={{ opacity: 0, y: -20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 20, transition: { duration: 0.2 } }}
-                      transition={{
-                        type: 'spring',
-                        stiffness: 300,
-                        damping: 30,
-                      }}
                       layout='position'
                       className='inline-block'
                     >
@@ -190,14 +180,15 @@ export function Navbar() {
               </NavigationMenu>
             </motion.div>
 
-            <div className='flex items-center gap-2 sm:gap-3'>
+            <div className='flex items-center gap-2 sm:gap-2'>
+              <LanguageSwitcher />
               <Link to='/settings'>
-                <Button variant='ghost' size='icon' className='h-9 w-9'>
+                <Button variant='ghost' size='icon' className='h-9 w-9 p-0'>
                   <motion.div
-                    animate={{ rotate: 0 }}
-                    whileHover={{ rotate: 200 }}
+                    className='h-9 w-9 flex items-center justify-center'
+                    initial={{ rotate: 0 }}
+                    whileHover={{ rotate: 30 }}
                     whileTap={{ rotate: -10 }}
-                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                   >
                     <Settings className='h-4 w-4' />
                   </motion.div>
@@ -205,7 +196,6 @@ export function Navbar() {
                   <span className='sr-only'>Settings</span>
                 </Button>
               </Link>
-              <LanguageSwitcher />
               <ModeToggle />
             </div>
           </div>

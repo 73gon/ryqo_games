@@ -17,6 +17,9 @@ export function SoloTypeRacer() {
   const [timedDuration, setTimedDuration] = useState<TimeDuration>(30);
   const [withPunctuation] = useState(false);
 
+  // Visual scroll offset for non-endless modes
+  const [visualScrollOffset, setVisualScrollOffset] = useState(0);
+
   // Get random text for solo text mode
   const [soloText, refreshSoloText] = useRandomText(withPunctuation);
 
@@ -109,7 +112,19 @@ export function SoloTypeRacer() {
   const lastKeyCorrect = isEndless ? endlessMode.lastKeyCorrect : isSoloTimed ? timedMode.lastKeyCorrect : textLastKeyCorrect;
   const progress = isSoloTimed || isEndless ? 0 : textProgress;
   const displayText = isEndless ? endlessMode.text : isSoloTimed ? timedMode.text : soloText;
-  const scrollOffset = isEndless ? endlessMode.scrollOffset : 0;
+  const scrollOffset = isEndless ? endlessMode.scrollOffset : visualScrollOffset;
+
+  // Handle scroll request from TextDisplay
+  const handleRequestScroll = useCallback(
+    (newOffset: number) => {
+      if (isEndless) {
+        endlessMode.setScrollOffset(newOffset);
+      } else {
+        setVisualScrollOffset(newOffset);
+      }
+    },
+    [isEndless, endlessMode],
+  );
 
   // Check if current player has finished
   const currentPlayerFinished = useMemo(() => {
@@ -140,6 +155,7 @@ export function SoloTypeRacer() {
   const handlePlayAgain = useCallback(() => {
     refreshSoloText();
     setFinalStats(null);
+    setVisualScrollOffset(0);
 
     if (soloModeType === 'timed') {
       timedMode.reset();
@@ -167,6 +183,7 @@ export function SoloTypeRacer() {
       if (newMode === soloModeType) return;
       setSoloModeType(newMode);
       setFinalStats(null);
+      setVisualScrollOffset(0);
       if (newMode === 'timed') {
         timedMode.reset();
       } else if (newMode === 'endless') {
@@ -195,6 +212,7 @@ export function SoloTypeRacer() {
       if (newDuration === timedDuration) return;
       setTimedDuration(newDuration);
       setFinalStats(null);
+      setVisualScrollOffset(0);
       timedMode.reset();
       setLocalPlayers([
         {
@@ -240,6 +258,7 @@ export function SoloTypeRacer() {
         onPlayAgain={handlePlayAgain}
         onStop={handleStopEndless}
         scrollOffset={scrollOffset}
+        onRequestScroll={handleRequestScroll}
         countdown={null}
       />
     </div>

@@ -31,6 +31,7 @@ export function useTypeRacer({ text, onProgress, onComplete, enabled = true }: U
   const [pressedKey, setPressedKey] = useState<string | null>(null);
   const [lastKeyCorrect, setLastKeyCorrect] = useState<boolean | null>(null);
   const [currentText, setCurrentText] = useState(text);
+  const [timeElapsedState, setTimeElapsedState] = useState(0);
 
   // Use refs to avoid stale closures in event handlers
   const currentIndexRef = useRef(currentIndex);
@@ -66,11 +67,22 @@ export function useTypeRacer({ text, onProgress, onComplete, enabled = true }: U
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
+  // Interval for time elapsed
+  useEffect(() => {
+    if (!startTime || isComplete) return;
+
+    const interval = setInterval(() => {
+      setTimeElapsedState((Date.now() - startTime) / 1000);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [startTime, isComplete]);
+
   const progress = currentText.length > 0 ? (currentIndex / currentText.length) * 100 : 0;
 
   const calculateStats = useCallback((): GameStats => {
-    const timeElapsed = startTimeRef.current ? Date.now() - startTimeRef.current : 0;
-    const minutes = timeElapsed / 1000 / 60;
+    const timeElapsed = startTimeRef.current ? (Date.now() - startTimeRef.current) / 1000 : 0;
+    const minutes = timeElapsed / 60;
     const wordsTyped = currentIndexRef.current / 5; // Standard: 5 chars = 1 word
     const wpm = minutes > 0 ? Math.round(wordsTyped / minutes) : 0;
     const accuracy = totalCharsTypedRef.current > 0 ? (correctCharsRef.current / totalCharsTypedRef.current) * 100 : 100;
@@ -81,9 +93,9 @@ export function useTypeRacer({ text, onProgress, onComplete, enabled = true }: U
       correctChars: correctCharsRef.current,
       incorrectChars: totalCharsTypedRef.current - correctCharsRef.current,
       totalChars: currentTextRef.current.length,
-      timeElapsed,
+      timeElapsed, // Use calculated elapsed time, which matches the state roughly but is precise
     };
-  }, []);
+  }, [timeElapsedState]); // Depends on timeElapsedState to force re-calc
 
   const reset = useCallback((newText?: string) => {
     setCurrentIndex(0);
@@ -93,6 +105,7 @@ export function useTypeRacer({ text, onProgress, onComplete, enabled = true }: U
     isCompleteRef.current = false;
     setStartTime(null);
     startTimeRef.current = null;
+    setTimeElapsedState(0);
     setPressedKey(null);
     setLastKeyCorrect(null);
     correctCharsRef.current = 0;
@@ -131,8 +144,8 @@ export function useTypeRacer({ text, onProgress, onComplete, enabled = true }: U
         currentIndexRef.current = newIndex;
 
         // Calculate current stats for progress callback
-        const timeElapsed = startTimeRef.current ? Date.now() - startTimeRef.current : 0;
-        const minutes = timeElapsed / 1000 / 60;
+        const timeElapsed = startTimeRef.current ? (Date.now() - startTimeRef.current) / 1000 : 0;
+        const minutes = timeElapsed / 60;
         const wordsTyped = newIndex / 5;
         const wpm = minutes > 0 ? Math.round(wordsTyped / minutes) : 0;
         const accuracy = totalCharsTypedRef.current > 0 ? (correctCharsRef.current / totalCharsTypedRef.current) * 100 : 100;
@@ -160,12 +173,42 @@ export function useTypeRacer({ text, onProgress, onComplete, enabled = true }: U
     [calculateStats],
   );
 
+  const handleBackspace = useCallback(() => {
+    if (!enabledRef.current || currentIndexRef.current === 0) return;
+
+    const newIndex = currentIndexRef.current - 1;
+    setCurrentIndex(newIndex);
+    currentIndexRef.current = newIndex;
+
+    setErrors((prev) => {
+      const next = new Set(prev);
+      next.delete(newIndex);
+      return next;
+    });
+
+    if (totalCharsTypedRef.current > 0) {
+      totalCharsTypedRef.current--;
+    }
+
+    const stats = calculateStats();
+    const newProgress = (newIndex / currentTextRef.current.length) * 100;
+    onProgressRef.current?.(newProgress, stats.wpm, stats.accuracy);
+
+    setPressedKey(null);
+    setLastKeyCorrect(null);
+  }, [calculateStats]);
+
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!enabledRef.current) return;
 
-      // Prevent default for keys we handle
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        handleBackspace();
+        return;
+      }
+
       if (e.key.length === 1 || e.key === ' ') {
         e.preventDefault();
         handleKeyPress(e.key);
@@ -174,7 +217,7 @@ export function useTypeRacer({ text, onProgress, onComplete, enabled = true }: U
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyPress]);
+  }, [handleKeyPress, handleBackspace]);
 
   // Update text when prop changes
   useEffect(() => {

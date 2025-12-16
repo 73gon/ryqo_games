@@ -1,7 +1,7 @@
 // Solo racing screen component for TypeRacer
 
 import { memo } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, Toggle as ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -45,6 +45,9 @@ interface SoloRacingScreenProps {
   onPlayAgain: () => void;
   onStop?: () => void;
 
+  // Scrolling
+  onRequestScroll?: (newOffset: number) => void;
+
   // Countdown
   countdown: number | null;
 }
@@ -70,64 +73,50 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
   finalStats,
   onPlayAgain,
   onStop,
+  onRequestScroll,
   countdown,
 }: SoloRacingScreenProps) {
   return (
     <div className='flex flex-col gap-4 w-full max-w-7xl relative animate-in fade-in-0 duration-300'>
       {/* Countdown overlay */}
       {countdown !== null && <CountdownOverlay count={countdown} />}
-
       {/* Stats bar */}
-      <div className='flex items-center justify-between text-sm'>
+      <div className='flex items-center justify-between text-sm px-2'>
         <div className='flex items-center gap-4'>
-          {/* Timer for timed mode */}
-          {isTimed && (
-            <AnimatePresence mode='popLayout'>
-              <motion.span layout className='text-muted-foreground'>
-                time: <span className={`font-bold ${timeRemaining <= 5 ? 'text-red-500' : 'text-foreground'}`}>{timeRemaining}s</span>
-              </motion.span>
-            </AnimatePresence>
-          )}
-          {/* Elapsed time for endless mode */}
-          {isEndless && stats.timeElapsed > 0 && (
-            <AnimatePresence mode='popLayout'>
-              <motion.span layout className='text-muted-foreground'>
-                time: <span className='text-foreground font-bold'>{Math.floor(stats.timeElapsed)}s</span>
-              </motion.span>
-            </AnimatePresence>
-          )}
-          <AnimatePresence mode='popLayout'>
-            <motion.span layout className='text-muted-foreground'>
-              wpm: <span className='text-foreground font-bold'>{stats.wpm}</span>
+          <motion.span layout className='text-muted-foreground'>
+            time:{' '}
+            <span className={`font-bold ${isTimed && timeRemaining <= 5 ? 'text-red-500' : 'text-foreground'}`}>
+              {isTimed ? `${timeRemaining}s` : `${Math.floor(stats.timeElapsed)}s`}
+            </span>
+          </motion.span>
+          <motion.span layout className='text-muted-foreground'>
+            wpm: <span className='text-foreground font-bold'>{stats.wpm}</span>
+          </motion.span>
+          <motion.span layout className='text-muted-foreground'>
+            accuracy:{' '}
+            <motion.span layout className='text-foreground font-bold'>
+              {stats.accuracy.toFixed(1)}%
             </motion.span>
-            <motion.span layout className='text-muted-foreground'>
-              accuracy:{' '}
-              <motion.span layout className='text-foreground font-bold'>
-                {stats.accuracy.toFixed(1)}%
-              </motion.span>
+          </motion.span>
+
+          <motion.span layout className='text-muted-foreground'>
+            chars:{' '}
+            <motion.span layout className='text-foreground font-bold'>
+              {stats.correctChars}
             </motion.span>
-          </AnimatePresence>
-          {isEndless && (
-            <AnimatePresence mode='popLayout'>
-              <motion.span layout className='text-muted-foreground'>
-                chars:{' '}
-                <motion.span layout className='text-foreground font-bold'>
-                  {stats.correctChars}
-                </motion.span>
-              </motion.span>
-            </AnimatePresence>
-          )}
+          </motion.span>
         </div>
         <div className='flex items-center gap-2'>
-          <motion.div className='flex items-center gap-2'>
+          <div className='flex items-center gap-2'>
             {/* Duration toggle - only show in timed mode, on the left */}
-            <AnimatePresence mode='popLayout'>
+            <AnimatePresence>
               {soloModeType === 'timed' && (
                 <motion.div
+                  key='duration-toggle'
                   initial={{ opacity: 0, x: 20, scale: 0.9 }}
                   animate={{ opacity: 1, x: 0, scale: 1 }}
                   exit={{ opacity: 0, x: 20, scale: 0.9 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  layout
                 >
                   <ToggleGroup
                     value={[timedDuration.toString()]}
@@ -140,19 +129,21 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
               )}
             </AnimatePresence>
 
-            {/* Mode toggle: Text vs Timed vs Endless */}
-            <ToggleGroup value={[soloModeType]} onValueChange={(v) => v.length > 0 && onModeChange(v[0] as SoloModeType)}>
-              <ToggleGroupItem value='text' aria-label='Text mode'>
-                <FileText className='w-4 h-4' />
-              </ToggleGroupItem>
-              <ToggleGroupItem value='timed' aria-label='Timed mode'>
-                <Clock className='w-4 h-4' />
-              </ToggleGroupItem>
-              <ToggleGroupItem value='endless' aria-label='Just type mode'>
-                <Infinity className='w-4 h-4' />
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </motion.div>
+            <motion.div layout>
+              {/* Mode toggle: Text vs Timed vs Endless */}
+              <ToggleGroup value={[soloModeType]} onValueChange={(v) => v.length > 0 && onModeChange(v[0] as SoloModeType)}>
+                <ToggleGroupItem value='text' aria-label='Text mode'>
+                  <FileText className='w-4 h-4' />
+                </ToggleGroupItem>
+                <ToggleGroupItem value='timed' aria-label='Timed mode'>
+                  <Clock className='w-4 h-4' />
+                </ToggleGroupItem>
+                <ToggleGroupItem value='endless' aria-label='Just type mode'>
+                  <Infinity className='w-4 h-4' />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </motion.div>
+          </div>
 
           {/* Stop button for endless mode */}
           {isEndless && stats.timeElapsed > 0 && onStop && (
@@ -161,27 +152,48 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
             </Button>
           )}
 
-          <Toggle pressed={showKeyboard} onPressedChange={onShowKeyboardChange} size='sm' aria-label='Toggle keyboard display'>
-            <KeyboardIcon className='w-4 h-4' />
-          </Toggle>
+          <motion.div layout>
+            <Toggle pressed={showKeyboard} onPressedChange={onShowKeyboardChange} size='sm' aria-label='Toggle keyboard display'>
+              <KeyboardIcon className='w-4 h-4' />
+            </Toggle>
+          </motion.div>
         </div>
       </div>
-
       {/* Text display - show with scroll offset for endless mode */}
-      <TextDisplay text={displayText} currentIndex={currentIndex} errors={errors} scrollOffset={scrollOffset} />
+      <motion.div layout className='w-full'>
+        <TextDisplay text={displayText} currentIndex={currentIndex} errors={errors} scrollOffset={scrollOffset} onRequestScroll={onRequestScroll} />
+      </motion.div>
 
-      {/* Separator */}
-      {showKeyboard && <div className='h-px bg-border' />}
+      <AnimatePresence mode='popLayout'>
+        {/* Virtual keyboard */}
+        {showKeyboard && (
+          <motion.div
+            key='keyboard-container'
+            layout
+            initial={{ opacity: 0, x: 20, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{
+              opacity: 0,
+              x: 20,
+              scale: 0.9,
+              transition: { duration: 0.2, ease: 'easeOut' },
+            }}
+            className='w-full flex flex-col gap-2'
+          >
+            {/* Separator inside the container */}
+            <div className='h-px bg-border w-full' />
 
-      {/* Virtual keyboard */}
-      {showKeyboard && <Keyboard pressedKey={pressedKey} lastKeyCorrect={lastKeyCorrect} />}
-
+            {/* Keyboard */}
+            <Keyboard pressedKey={pressedKey} lastKeyCorrect={lastKeyCorrect} />
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Finished status panel */}
       {isFinished && (
         <div className='flex flex-col items-center gap-4 p-6 bg-muted/30 rounded-lg border border-border animate-in fade-in-0 duration-300'>
           <div className='text-center'>
             <div className='text-2xl font-bold text-foreground mb-1'>
-              {isTimed ? "⏱️ time's up!" : isEndless ? '✋ Session Stopped!' : '🏁 Race Complete!'}
+              {isTimed ? "time's up!" : isEndless ? 'Session Stopped!' : 'Race Complete!'}
             </div>
           </div>
 
