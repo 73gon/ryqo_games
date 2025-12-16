@@ -4,10 +4,10 @@ import { memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
 import { Keyboard as KeyboardIcon, RotateCcw } from 'lucide-react';
-import { TextDisplay } from './TextDisplay';
-import { Keyboard } from './Keyboard';
-import { RaceTrack } from './RaceTrack';
-import { CountdownOverlay } from './CountdownOverlay';
+import { TextDisplay } from '../components/TextDisplay';
+import { Keyboard } from '../components/Keyboard';
+import { RaceTrack } from '../components/race-track';
+import { CountdownOverlay } from '../components/CountdownOverlay';
 import type { GameStats, Player } from '../types';
 
 interface MultiplayerRacingScreenProps {

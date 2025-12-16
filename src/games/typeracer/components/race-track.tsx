@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import type { Player } from '../types';
 import { CAR_COLORS } from '../constants';
+import { motion } from 'motion/react';
 
 interface RaceTrackProps {
   players: Player[];
@@ -93,17 +94,18 @@ export const RaceTrack = memo(function RaceTrack({ players, currentPlayerId }: R
 
                 {/* Finish line */}
                 <div
-                  className='absolute right-0 top-0 bottom-0 w-2 bg-gradient-to-b from-white via-black to-white opacity-50'
+                  className='absolute right-0 top-0 bottom-0 w-2 bg-linear-to-b from-white via-black to-white opacity-50'
                   style={{ backgroundSize: '100% 4px' }}
                 />
 
                 {/* Car */}
-                <div
+                <motion.div
                   className='absolute top-1/2 -translate-y-1/2 transition-all duration-300 ease-out'
+                  animate={{ left: `calc(${Math.min(player.progress, 95)}% - 16px)` }}
                   style={{ left: `calc(${Math.min(player.progress, 95)}% - 16px)` }}
                 >
                   <Car color={color} isCurrentPlayer={isCurrentPlayer} />
-                </div>
+                </motion.div>
               </div>
 
               {/* Player info */}
