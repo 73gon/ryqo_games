@@ -192,6 +192,49 @@ export const useUno = () => {
     });
   };
 
+  useEffect(() => {
+    if (!gameState || gameState.status !== 'waiting') return;
+    const roomId = gameState.roomId;
+    let isActive = true;
+
+    const refreshRoom = async () => {
+      const data = await Supabase.getRoom(roomId);
+      if (!data || !isActive) return;
+      setGameState((prev) => {
+        if (data.status === 'waiting') {
+          const players = normalizePlayers(data.players, prev?.players ?? []);
+          if (!prev) {
+            return {
+              roomId,
+              players,
+              deck: [],
+              discardPile: [],
+              currentTurnIndex: 0,
+              direction: 1,
+              status: 'waiting',
+              activeColor: 'red',
+              version: 0,
+            };
+          }
+          return {
+            ...prev,
+            players,
+            status: 'waiting',
+          };
+        }
+
+        return normalizeGameState(data.gameState, roomId, prev) ?? prev;
+      });
+    };
+
+    refreshRoom();
+    const intervalId = window.setInterval(refreshRoom, 3000);
+    return () => {
+      isActive = false;
+      window.clearInterval(intervalId);
+    };
+  }, [gameState?.roomId, gameState?.status]);
+
   const startGame = async () => {
     if (!gameState || !gameState.players) return;
     if (gameState.players.length < 2) return toast.error('Need at least 2 players to start');
