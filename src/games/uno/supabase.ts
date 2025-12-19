@@ -3,6 +3,19 @@ import { type GameState, type Player } from './core/types';
 
 const TABLE_NAME = 'uno_rooms';
 
+const parsePlayers = (value: unknown): Player[] => {
+  if (Array.isArray(value)) return value as Player[];
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed as Player[];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 export const subscribeToRoom = (roomId: string, callback: (payload: any) => void) => {
   if (!supabaseClient || !hasSupabaseConfig) return null;
 
@@ -47,23 +60,38 @@ export const createRoom = async (host: Player): Promise<string | null> => {
   return roomId;
 };
 
-export const joinRoom = async (roomId: string, player: Player): Promise<boolean> => {
-  if (!supabaseClient || !hasSupabaseConfig) return false;
+export const joinRoom = async (
+  roomId: string,
+  player: Player,
+): Promise<{ success: boolean; reason?: 'already_joined'; error?: string }> => {
+  if (!supabaseClient || !hasSupabaseConfig) return { success: false, error: 'Supabase is not configured' };
 
   // Fetch current players
   const { data, error } = await supabaseClient.from(TABLE_NAME).select('players, status').eq('id', roomId).single();
 
-  if (error || !data) return false;
-  if (data.status !== 'waiting') return false;
+  if (error || !data) {
+    console.error('Error fetching room for join:', error);
+    return { success: false, error: error?.message ?? 'Room not found' };
+  }
+  if (data.status !== 'waiting') {
+    return { success: false, error: 'Game already started' };
+  }
 
-  const currentPlayers = data.players as Player[];
-  if (currentPlayers.find((p) => p.id === player.id)) return true; // Already joined
+  const currentPlayers = parsePlayers(data.players);
+  if (currentPlayers.find((p) => p.id === player.id)) {
+    return { success: true, reason: 'already_joined' }; // Already joined
+  }
 
   const updatedPlayers = [...currentPlayers, player];
 
   const { error: updateError } = await supabaseClient.from(TABLE_NAME).update({ players: updatedPlayers }).eq('id', roomId);
 
-  return !updateError;
+  if (updateError) {
+    console.error('Error joining room:', updateError);
+    return { success: false, error: updateError.message };
+  }
+
+  return { success: true };
 };
 
 export const updateGameState = async (roomId: string, gameState: GameState) => {

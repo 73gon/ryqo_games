@@ -47,6 +47,7 @@ export const Hand = ({ cards, isMyTurn, onPlayCard, className }: HandProps) => {
                 rotate: rotation,
                 marginLeft: index === 0 ? 0 : -30, // Negative margin for overlap
                 zIndex: index,
+                opacity: 1,
               }}
               exit={{ y: 200, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}

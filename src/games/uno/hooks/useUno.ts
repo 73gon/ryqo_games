@@ -11,11 +11,24 @@ export const useUno = () => {
   const [isLoading, setIsLoading] = useState(false);
   const subscriptionRef = useRef<(() => void) | null>(null);
 
+  const normalizeHand = (value: unknown): Card[] => {
+    if (Array.isArray(value)) return value as Card[];
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) return parsed as Card[];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
   const normalizePlayers = (value: unknown, fallback: Player[] = []): Player[] => {
     if (Array.isArray(value)) {
       return (value as Player[]).map((player) => ({
         ...player,
-        hand: Array.isArray(player.hand) ? player.hand : [],
+        hand: normalizeHand(player.hand),
       }));
     }
     if (typeof value === 'string') {
@@ -24,7 +37,7 @@ export const useUno = () => {
         if (Array.isArray(parsed)) {
           return (parsed as Player[]).map((player) => ({
             ...player,
-            hand: Array.isArray(player.hand) ? player.hand : [],
+            hand: normalizeHand(player.hand),
           }));
         }
       } catch {
@@ -56,12 +69,12 @@ export const useUno = () => {
 
   // Initialize Player ID
   useEffect(() => {
-    let storedId = localStorage.getItem('uno_player_id');
+    let storedId = sessionStorage.getItem('uno_player_id');
     let storedName = localStorage.getItem('uno_player_name');
 
     if (!storedId) {
       storedId = `player_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-      localStorage.setItem('uno_player_id', storedId);
+      sessionStorage.setItem('uno_player_id', storedId);
     }
 
     setPlayerId(storedId);
@@ -75,6 +88,7 @@ export const useUno = () => {
 
   const createGame = async () => {
     if (!playerName) return toast.error('Please enter your name');
+    if (!playerId) return toast.error('Player is still initializing. Please try again.');
     setIsLoading(true);
 
     const host: Player = {
@@ -107,6 +121,7 @@ export const useUno = () => {
 
   const joinGame = async (code: string) => {
     if (!playerName) return toast.error('Please enter your name');
+    if (!playerId) return toast.error('Player is still initializing. Please try again.');
     setIsLoading(true);
 
     const player: Player = {
@@ -116,8 +131,8 @@ export const useUno = () => {
       isHost: false,
     };
 
-    const success = await Supabase.joinRoom(code, player);
-    if (success) {
+    const result = await Supabase.joinRoom(code, player);
+    if (result.success) {
       connectToRoom(code);
       // Fetch initial state immediately
       const data = await Supabase.getRoom(code);
@@ -145,7 +160,7 @@ export const useUno = () => {
         }
       }
     } else {
-      toast.error('Failed to join room. Check code or room might be full/started.');
+      toast.error(result.error || 'Failed to join room. Check code or room might be full/started.');
     }
     setIsLoading(false);
   };
@@ -234,6 +249,26 @@ export const useUno = () => {
       window.clearInterval(intervalId);
     };
   }, [gameState?.roomId, gameState?.status]);
+
+  useEffect(() => {
+    if (!gameState || gameState.status !== 'playing') return;
+    if (gameState.discardPile.length === 0) return;
+    const me = gameState.players.find((player) => player.id === playerId);
+    if (!me || me.hand.length > 0) return;
+
+    let isActive = true;
+    const refreshRoom = async () => {
+      const data = await Supabase.getRoom(gameState.roomId);
+      if (!data || !isActive) return;
+      const nextState = normalizeGameState(data.gameState, gameState.roomId, gameState);
+      if (nextState) setGameState(nextState);
+    };
+
+    refreshRoom();
+    return () => {
+      isActive = false;
+    };
+  }, [gameState?.roomId, gameState?.status, gameState?.version, gameState?.discardPile.length, playerId]);
 
   const startGame = async () => {
     if (!gameState || !gameState.players) return;
