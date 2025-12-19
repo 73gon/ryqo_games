@@ -13,7 +13,7 @@ export function LanguageSwitcher() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant='outline' size='sm' className='gap-2 border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground p-0'>
+        <Button variant='outline' size='sm' className='gap-2 border-border bg-card text-foreground hover:bg-accent hover:text-accent-foreground px-3'>
           <Languages className='size-5' />
           <span className='hidden sm:inline'>
             {i18n.language === 'en' ? t('language.english') : i18n.language === 'de' ? t('language.german') : i18n.language}

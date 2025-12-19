@@ -4,7 +4,7 @@ import { RotateCcw, Check, CaseUpper, CaseLower, Type } from 'lucide-react';
 import { useSettings, type AppSettings } from '@/lib/settings';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ToggleGroup, Toggle } from '@/components/ui/toggle-group';
+import { ToggleGroup, Toggle as ToggleGroupItem } from '@/components/animate-ui/components/base/toggle-group';
 import { cn } from '@/lib/utils';
 
 const containerVariants = {
@@ -63,7 +63,7 @@ export function SettingsPage() {
         </motion.div>
 
         {/* Interface Section */}
-        <div className='space-y-6'>
+        <motion.div className='space-y-6'>
           <motion.h2 variants={itemVariants} className='text-lg font-semibold text-foreground/90'>
             {t('settings.interface.label', 'Interface')}
           </motion.h2>
@@ -78,7 +78,10 @@ export function SettingsPage() {
               <p className='text-sm text-muted-foreground'>{t('settings.interface.pageWidth.description', 'Adjust the content width')}</p>
             </div>
             <div>
-              <Select value={settings.pageWidth} onValueChange={(value: AppSettings['pageWidth']) => updateSettings({ pageWidth: value })}>
+              <Select
+                value={settings.pageWidth}
+                onValueChange={(value: AppSettings['pageWidth'] | null) => value && updateSettings({ pageWidth: value })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -103,7 +106,7 @@ export function SettingsPage() {
               <p className='text-sm text-muted-foreground'>{t('settings.interface.font.description', 'Choose your preferred typeface')}</p>
             </div>
             <div>
-              <Select value={settings.font} onValueChange={(value: AppSettings['font']) => updateSettings({ font: value })}>
+              <Select value={settings.font} onValueChange={(value: AppSettings['font'] | null) => value && updateSettings({ font: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -141,23 +144,23 @@ export function SettingsPage() {
               <ToggleGroup
                 variant='outline'
                 value={settings.textCase ? [settings.textCase] : []}
-                onValueChange={(value) => {
+                onValueChange={(value: string[]) => {
                   if (value && value.length > 0) updateSettings({ textCase: value[0] as AppSettings['textCase'] });
                 }}
               >
-                <Toggle value='normal' aria-label='Normal case'>
+                <ToggleGroupItem value='normal' aria-label='Normal case'>
                   <Type className='h-4 w-4' />
-                </Toggle>
-                <Toggle value='lowercase' aria-label='Lowercase'>
+                </ToggleGroupItem>
+                <ToggleGroupItem value='lowercase' aria-label='Lowercase'>
                   <CaseLower className='h-4 w-4' />
-                </Toggle>
-                <Toggle value='uppercase' aria-label='Uppercase'>
+                </ToggleGroupItem>
+                <ToggleGroupItem value='uppercase' aria-label='Uppercase'>
                   <CaseUpper className='h-4 w-4' />
-                </Toggle>
+                </ToggleGroupItem>
               </ToggleGroup>
             </div>
           </motion.div>
-        </div>
+        </motion.div>
 
         {/* Appearance Section */}
         <div className='space-y-6 pt-6'>

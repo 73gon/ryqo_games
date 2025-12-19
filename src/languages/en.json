@@ -49,7 +49,7 @@
   "games": {
     "hub": {
       "title": "Mini-Games Hub",
-      "subtitle": "A collection of classic arcade and puzzle games built with React, PixiJS, and Tailwind CSS."
+      "subtitle": "A collection of classic arcade and puzzle games"
     },
     "snake": {
       "meta": {

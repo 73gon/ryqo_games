@@ -1,17 +1,15 @@
-import { Graphics } from 'pixi.js'
-
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
 
 /**
  * Draws a dead pixel art snake head at the specified position (with X eyes)
- * @param g - PixiJS Graphics object
+ * @param ctx - CanvasRenderingContext2D
  * @param x - Center X position in pixels
  * @param y - Center Y position in pixels
  * @param cellSize - Size of each grid cell in pixels
  * @param direction - Direction the snake was facing
  */
 export function drawPixelSnakeHeadDead(
-  g: Graphics,
+  ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   cellSize: number,
@@ -169,14 +167,13 @@ export function drawPixelSnakeHeadDead(
   }
 
   // Head body (gray for dead)
-  g.fillStyle = 0x888888
+  ctx.fillStyle = '#888888'
   headRects.forEach((rect) => {
-    g.rect(rect.x, rect.y, rect.width, rect.height)
-    g.fill()
+    ctx.fillRect(rect.x, rect.y, rect.width, rect.height)
   })
 
   // Draw X eyes (red for dead) - using small rects to create X pattern
-  g.fillStyle = 0xff0000
+  ctx.fillStyle = '#ff0000'
   xEyes.forEach((xEye) => {
     // Create X pattern using small rectangles
     const steps = 5
@@ -185,13 +182,12 @@ export function drawPixelSnakeHeadDead(
       // First diagonal of X
       const x1 = xEye.line1.x1 + (xEye.line1.x2 - xEye.line1.x1) * progress
       const y1 = xEye.line1.y1 + (xEye.line1.y2 - xEye.line1.y1) * progress
-      g.rect(x1, y1, pixelSize * 0.6, pixelSize * 0.6)
-      g.fill()
+      ctx.fillRect(x1, y1, pixelSize * 0.6, pixelSize * 0.6)
+      
       // Second diagonal of X
       const x2 = xEye.line2.x1 + (xEye.line2.x2 - xEye.line2.x1) * progress
       const y2 = xEye.line2.y1 + (xEye.line2.y2 - xEye.line2.y1) * progress
-      g.rect(x2, y2, pixelSize * 0.6, pixelSize * 0.6)
-      g.fill()
+      ctx.fillRect(x2, y2, pixelSize * 0.6, pixelSize * 0.6)
     }
   })
 }

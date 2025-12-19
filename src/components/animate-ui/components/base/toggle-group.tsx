@@ -9,7 +9,7 @@ import {
   type ToggleGroupProps as ToggleGroupPrimitiveProps,
   type ToggleProps as TogglePrimitiveProps,
 } from '@/components/animate-ui/primitives/base/toggle-group';
-import { toggleVariants } from '@/components/ui/toggle';
+import { toggleVariants } from '@/components/animate-ui/components/base/toggle';
 import { cn } from '@/lib/utils';
 import { getStrictContext } from '@/lib/get-strict-context';
 

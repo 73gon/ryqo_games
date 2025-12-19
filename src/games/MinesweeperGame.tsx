@@ -238,7 +238,7 @@ export function MinesweeperGame() {
     <GameLayout
       controls={
         <div className='flex items-center gap-3 sm:gap-4 flex-wrap justify-center'>
-          <Select value={difficulty} onValueChange={(v: Difficulty) => setDifficulty(v)}>
+          <Select value={difficulty} onValueChange={(v: Difficulty | null) => v && setDifficulty(v)}>
             <SelectTrigger className='w-28'>
               <SelectValue />
             </SelectTrigger>

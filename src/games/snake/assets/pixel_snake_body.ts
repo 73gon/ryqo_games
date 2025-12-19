@@ -1,14 +1,12 @@
-import { Graphics } from 'pixi.js'
-
 /**
  * Draws a pixel art snake body segment at the specified position
- * @param g - PixiJS Graphics object
+ * @param ctx - CanvasRenderingContext2D
  * @param x - Center X position in pixels
  * @param y - Center Y position in pixels
  * @param cellSize - Size of each grid cell in pixels
  */
 export function drawPixelSnakeBody(
-  g: Graphics,
+  ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   cellSize: number,
@@ -19,7 +17,7 @@ export function drawPixelSnakeBody(
   const offset = cellSize / 2
 
   // Body (white)
-  g.fillStyle = 0xffffff
+  ctx.fillStyle = '#ffffff'
 
   // Create a rounded body shape
   const bodyRects = [
@@ -61,24 +59,21 @@ export function drawPixelSnakeBody(
   ]
 
   bodyRects.forEach((rect) => {
-    g.rect(rect.x, rect.y, rect.width, rect.height)
-    g.fill()
+    ctx.fillRect(rect.x, rect.y, rect.width, rect.height)
   })
 
   // Add scale pattern (darker pixels for detail)
-  g.fillStyle = 0xe0e0e0
-  g.rect(
+  ctx.fillStyle = '#e0e0e0'
+  ctx.fillRect(
     centerX - offset + pixelSize * 3,
     centerY - offset + pixelSize * 3.5,
     pixelSize,
     pixelSize,
   )
-  g.fill()
-  g.rect(
+  ctx.fillRect(
     centerX - offset + pixelSize * 5,
     centerY - offset + pixelSize * 4.5,
     pixelSize,
     pixelSize,
   )
-  g.fill()
 }

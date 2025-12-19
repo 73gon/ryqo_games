@@ -141,9 +141,6 @@ export function Navbar() {
                               className='block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
                             >
                               <div className='text-sm font-medium leading-none'>{t('games.typeracer.menu', 'Menu')}</div>
-                              <p className='line-clamp-2 text-sm leading-snug text-muted-foreground'>
-                                {t('games.typeracer.menuDescription', 'Choose your game mode')}
-                              </p>
                             </Link>
                           </NavigationMenuLink>
                         </li>
@@ -154,9 +151,6 @@ export function Navbar() {
                               className='block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
                             >
                               <div className='text-sm font-medium leading-none'>{t('games.typeracer.modes.solo', 'Solo')}</div>
-                              <p className='line-clamp-2 text-sm leading-snug text-muted-foreground'>
-                                {t('games.typeracer.soloDescription', 'Practice typing alone')}
-                              </p>
                             </Link>
                           </NavigationMenuLink>
                         </li>
@@ -167,9 +161,6 @@ export function Navbar() {
                               className='block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground'
                             >
                               <div className='text-sm font-medium leading-none'>{t('games.typeracer.modes.multiplayer', 'Multiplayer')}</div>
-                              <p className='line-clamp-2 text-sm leading-snug text-muted-foreground'>
-                                {t('games.typeracer.multiplayerDescription', 'Race against others')}
-                              </p>
                             </Link>
                           </NavigationMenuLink>
                         </li>

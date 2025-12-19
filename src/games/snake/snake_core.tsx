@@ -1,5 +1,4 @@
 import { useEffect, useRef, useImperativeHandle, forwardRef } from 'react'
-import { Application, Graphics } from 'pixi.js'
 import { useGameSound } from '@/hooks/useGameSound'
 import { drawPixelApple } from './assets/pixel_apple'
 import { drawPixelSnakeHead } from './assets/pixel_snake_head'
@@ -40,8 +39,9 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
     },
     ref,
   ) => {
-    const containerRef = useRef<HTMLDivElement>(null)
-    const appRef = useRef<Application | null>(null)
+    const canvasRef = useRef<HTMLCanvasElement>(null)
+    const requestRef = useRef<number | undefined>(undefined)
+    const lastTimeRef = useRef<number>(0)
 
     const { play: playEatSound } = useGameSound(
       'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
@@ -68,6 +68,7 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
     const speedRef = useRef(100) // ms per move
     const isPlayingRef = useRef(false)
     const gameOverRef = useRef(false)
+    const scoreRef = useRef(0)
 
     // Expose controls to parent
     useImperativeHandle(
@@ -97,6 +98,11 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
           gameOverRef.current = false
           isPlayingRef.current = true
           onStateChange(true)
+          
+          // Reset timing
+          lastTimeRef.current = performance.now()
+          timeSinceLastMoveRef.current = 0
+          
           window.focus()
         },
         stopGame: () => {
@@ -106,6 +112,7 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
         resumeGame: () => {
           isPlayingRef.current = true
           onStateChange(true)
+          lastTimeRef.current = performance.now()
           window.focus()
         },
       }),
@@ -133,74 +140,61 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
       }
     }, [appleCount])
 
-    // PixiJS Setup
+    // Game Loop
     useEffect(() => {
-      let app: Application | undefined
-      let destroyed = false
+      const canvas = canvasRef.current
+      if (!canvas) return
+      
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
 
-      const initApp = async () => {
-        if (!containerRef.current) return
+      // Set explicit size
+      canvas.width = CELL_SIZE * GRID_SIZE
+      canvas.height = CELL_SIZE * GRID_SIZE
 
-        const newApp = new Application()
-        await newApp.init({
-          width: CELL_SIZE * GRID_SIZE,
-          height: CELL_SIZE * GRID_SIZE,
-          backgroundColor: 0x1a1a1a,
-          antialias: true,
-        })
+      const animate = (time: number) => {
+        if (!lastTimeRef.current) {
+          lastTimeRef.current = time
+        }
+        
+        const deltaTime = time - lastTimeRef.current
+        lastTimeRef.current = time
 
-        if (destroyed) {
-          newApp.destroy()
+        if (!isPlayingRef.current || gameOverRef.current) {
+          drawGame(ctx, 0)
+          requestRef.current = requestAnimationFrame(animate)
           return
         }
 
-        if (containerRef.current) {
-          containerRef.current.innerHTML = ''
-          containerRef.current.appendChild(newApp.canvas)
+        timeSinceLastMoveRef.current += deltaTime
+        const currentSpeed = speedRef.current
+
+        if (timeSinceLastMoveRef.current >= currentSpeed) {
+          updateGame()
+          timeSinceLastMoveRef.current -= currentSpeed
+          // Prevent spiral of death if lag allows multiple updates
+          if (timeSinceLastMoveRef.current > currentSpeed) {
+            timeSinceLastMoveRef.current = 0
+          }
         }
 
-        app = newApp
-        appRef.current = newApp
-
-        const graphics = new Graphics()
-        newApp.stage.addChild(graphics)
-
-        newApp.ticker.add((ticker) => {
-          if (!isPlayingRef.current || gameOverRef.current) {
-            if (graphics) drawGame(graphics, 0)
-            return
-          }
-
-          timeSinceLastMoveRef.current += ticker.deltaMS
-          const currentSpeed = speedRef.current
-
-          if (timeSinceLastMoveRef.current >= currentSpeed) {
-            updateGame()
-            timeSinceLastMoveRef.current -= currentSpeed
-            if (timeSinceLastMoveRef.current > currentSpeed) {
-              timeSinceLastMoveRef.current = 0
-            }
-          }
-
-          const progress = Math.min(
-            timeSinceLastMoveRef.current / currentSpeed,
-            1,
-          )
-          drawGame(graphics, progress)
-        })
-
-        drawGame(graphics, 0)
+        const progress = Math.min(
+          timeSinceLastMoveRef.current / currentSpeed,
+          1,
+        )
+        drawGame(ctx, progress)
+        
+        requestRef.current = requestAnimationFrame(animate)
       }
 
-      initApp()
+      requestRef.current = requestAnimationFrame(animate)
 
       return () => {
-        destroyed = true
-        if (app) {
-          app.destroy({ removeView: true })
+        if (requestRef.current) {
+          cancelAnimationFrame(requestRef.current)
         }
       }
-    }, [])
+    }, []) // Run once on mount
 
     // Input handling
     useEffect(() => {
@@ -213,33 +207,7 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
           e.preventDefault()
         }
 
-        // Space handling is tricky here because we need to call the exposed methods
-        // But we are inside the component. We can just call the internal logic or refs.
-        // However, the parent might also want to control this.
-        // Let's handle direction here, but maybe let parent handle Space?
-        // Or handle Space here and notify parent?
-        // The original code handled Space inside the component.
-
         if (e.code === 'Space') {
-          if (gameOverRef.current) {
-            // Restart
-            // We can't call the exposed method directly easily without a ref to self?
-            // Actually we can just execute the logic.
-            // But for consistency, let's just emit an event or handle it internally.
-            // Let's handle it internally and notify state change.
-            // BUT the parent has the button that calls these methods.
-            // It's better if the parent handles the Space key for game control?
-            // No, the game should capture input when focused.
-            // Let's just replicate the logic:
-            // startGame() // But we need to call the function defined in useImperativeHandle...
-            // We can extract the logic to functions outside useImperativeHandle
-          }
-          // ...
-          // Actually, let's just let the parent handle the Space key if it wants global control,
-          // OR handle it here.
-          // The original code had it here.
-
-          // Let's extract the logic to local functions
           toggleGame()
           return
         }
@@ -264,16 +232,14 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
 
       window.addEventListener('keydown', handleKeyDown)
       return () => window.removeEventListener('keydown', handleKeyDown)
-    }, [appleCount]) // Re-bind if props change? No, refs are stable.
+    }, [appleCount])
 
     const addDirectionToQueue = (newDirection: Direction) => {
-      // Get the last direction in the queue, or current direction if queue is empty
       const lastDirection =
         directionQueueRef.current.length > 0
           ? directionQueueRef.current[directionQueueRef.current.length - 1]
           : directionRef.current
 
-      // Prevent opposite direction and duplicate
       const isOpposite =
         (newDirection === 'UP' && lastDirection === 'DOWN') ||
         (newDirection === 'DOWN' && lastDirection === 'UP') ||
@@ -314,15 +280,18 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
         isPlayingRef.current = true
         onGameRestart()
         onStateChange(true)
+        lastTimeRef.current = performance.now()
+        timeSinceLastMoveRef.current = 0
       } else if (isPlayingRef.current) {
         // Stop
         isPlayingRef.current = false
         onStateChange(false)
       } else {
-        // Resume or initial start
+        // Resume
         isPlayingRef.current = true
         onGameRestart()
         onStateChange(true)
+        lastTimeRef.current = performance.now()
       }
     }
 
@@ -330,7 +299,6 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
       prevSnakeRef.current = snakeRef.current.map((p) => ({ ...p }))
       const head = { ...snakeRef.current[0] }
 
-      // Consume next direction from queue if available
       if (directionQueueRef.current.length > 0) {
         directionRef.current = directionQueueRef.current.shift()!
       }
@@ -350,7 +318,6 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
           break
       }
 
-      // Check collisions
       if (
         head.x < 0 ||
         head.x >= GRID_SIZE ||
@@ -370,34 +337,11 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
 
       const newSnake = [head, ...snakeRef.current]
 
-      // Check food
       const foodIndex = foodsRef.current.findIndex(
         (f) => f.x === head.x && f.y === head.y,
       )
 
       if (foodIndex !== -1) {
-        onScoreChange(snakeRef.current.length - 2) // Score = length - 3 + 1? Original was just incrementing score state.
-        // Wait, original score logic: setScore(s => s + 1).
-        // We need to pass the new score.
-        // We don't track score locally in ref? We should if we want to pass it.
-        // Or just pass increment event?
-        // Let's track score in ref or just calculate it.
-        // Score is usually just number of apples eaten.
-        // Let's assume score starts at 0.
-        // We can just call onScoreChange(prev => prev + 1) if the parent supports it? No.
-        // We need to track score locally to send absolute value, or parent handles increment.
-        // Let's track locally.
-
-        // Actually, simpler:
-        // onScoreChange is called with new score.
-        // We need a scoreRef.
-      }
-
-      // Wait, I missed adding scoreRef.
-
-      if (foodIndex !== -1) {
-        // We need to increment score.
-        // Let's add scoreRef.
         scoreRef.current += 1
         onScoreChange(scoreRef.current)
 
@@ -411,9 +355,7 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
       snakeRef.current = newSnake
     }
 
-    const scoreRef = useRef(0)
-
-    // Reset score ref when starting game
+    // Reset score ref when mounting if needed, although state reset handles it.
     useEffect(() => {
       if (isPlayingRef.current && !gameOverRef.current) {
         scoreRef.current = 0
@@ -438,8 +380,9 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
       foodsRef.current.push(newFood)
     }
 
-    const drawGame = (g: Graphics, progress: number) => {
-      g.clear()
+    const drawGame = (ctx: CanvasRenderingContext2D, progress: number) => {
+      // Clear screen
+      ctx.clearRect(0, 0, CELL_SIZE * GRID_SIZE, CELL_SIZE * GRID_SIZE)
 
       // Get CSS variables for theme-aware colors
       const computedStyle = getComputedStyle(document.documentElement)
@@ -447,30 +390,35 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
       const gameGrid = computedStyle.getPropertyValue('--game-grid').trim()
       const gameBorder = computedStyle.getPropertyValue('--game-border').trim()
 
-      // Convert CSS color to hex (fallback to dark mode colors if not found)
-      const bgColor = gameBg ? parseInt(gameBg.replace('#', ''), 16) : 0x1a1a1a
-      const gridColor = gameGrid
-        ? parseInt(gameGrid.replace('#', ''), 16)
-        : 0x333333
-      const borderColor = gameBorder
-        ? parseInt(gameBorder.replace('#', ''), 16)
-        : 0x000000
+      const bgColor = gameBg || '#1a1a1a'
+      const gridColor = gameGrid || '#333333'
+      const borderColor = gameBorder || '#000000'
 
-      g.rect(0, 0, CELL_SIZE * GRID_SIZE, CELL_SIZE * GRID_SIZE)
-      g.fill(bgColor)
+      // Background
+      ctx.fillStyle = bgColor
+      ctx.fillRect(0, 0, CELL_SIZE * GRID_SIZE, CELL_SIZE * GRID_SIZE)
 
+      // Grid
+      ctx.strokeStyle = gridColor
+      ctx.globalAlpha = 0.5
+      ctx.lineWidth = 1
+      ctx.beginPath()
       for (let i = 0; i <= GRID_SIZE; i++) {
         const pos = i * CELL_SIZE
-        g.moveTo(pos, 0)
-        g.lineTo(pos, CELL_SIZE * GRID_SIZE)
-        g.moveTo(0, pos)
-        g.lineTo(CELL_SIZE * GRID_SIZE, pos)
+        ctx.moveTo(pos, 0)
+        ctx.lineTo(pos, CELL_SIZE * GRID_SIZE)
+        ctx.moveTo(0, pos)
+        ctx.lineTo(CELL_SIZE * GRID_SIZE, pos)
       }
-      g.stroke({ width: 1, color: gridColor, alpha: 0.5 })
+      ctx.stroke()
+      ctx.globalAlpha = 1.0
 
-      g.rect(0, 0, CELL_SIZE * GRID_SIZE, CELL_SIZE * GRID_SIZE)
-      g.stroke({ width: 2, color: borderColor })
+      // Border
+      ctx.strokeStyle = borderColor
+      ctx.lineWidth = 2
+      ctx.strokeRect(0, 0, CELL_SIZE * GRID_SIZE, CELL_SIZE * GRID_SIZE)
 
+      // Snake
       if (snakeRef.current.length > 0) {
         const points = snakeRef.current.map((segment, i) => {
           let x = segment.x
@@ -486,24 +434,22 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
           }
         })
 
-        g.fillStyle = 0xffffff
         points.forEach((p, i) => {
           if (i === 0) {
-            // Draw pixel art head for first segment
+            // Head
             if (gameOverRef.current) {
               drawPixelSnakeHeadDead(
-                g,
+                ctx,
                 p.x,
                 p.y,
                 CELL_SIZE,
                 directionRef.current,
               )
             } else {
-              drawPixelSnakeHead(g, p.x, p.y, CELL_SIZE, directionRef.current)
+              drawPixelSnakeHead(ctx, p.x, p.y, CELL_SIZE, directionRef.current)
             }
           } else if (i === points.length - 1 && points.length > 1) {
-            // Draw pixel art tail for last segment
-            // Determine tail direction based on previous segment
+            // Tail
             const prevPoint = points[i - 1]
             const dx = p.x - prevPoint.x
             const dy = p.y - prevPoint.y
@@ -515,24 +461,27 @@ export const SnakeCore = forwardRef<SnakeGameHandle, SnakeCoreProps>(
               tailDirection = dy > 0 ? 'DOWN' : 'UP'
             }
 
-            drawPixelSnakeTail(g, p.x, p.y, CELL_SIZE, tailDirection)
+            drawPixelSnakeTail(ctx, p.x, p.y, CELL_SIZE, tailDirection)
           } else {
-            // Draw pixel art body for middle segments
-            drawPixelSnakeBody(g, p.x, p.y, CELL_SIZE)
+            // Body
+            drawPixelSnakeBody(ctx, p.x, p.y, CELL_SIZE)
           }
         })
       }
 
+      // Apples
       foodsRef.current.forEach((food) => {
-        drawPixelApple(g, food.x, food.y, CELL_SIZE)
+        drawPixelApple(ctx, food.x, food.y, CELL_SIZE)
       })
     }
 
     return (
-      <div
-        ref={containerRef}
-        className="rounded-lg shadow-lg overflow-hidden"
-      />
+      <div className="rounded-lg shadow-lg overflow-hidden flex justify-center items-center bg-zinc-900">
+         <canvas
+            ref={canvasRef}
+            style={{ display: 'block' }} 
+         />
+      </div>
     )
   },
 )

@@ -4,7 +4,7 @@ import { memo } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Toggle } from '@/components/ui/toggle';
-import { ToggleGroup, Toggle as ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ToggleGroup, Toggle as ToggleGroupItem } from '@/components/animate-ui/components/base/toggle-group';
 import { Keyboard as KeyboardIcon, RotateCcw, Clock, FileText, Infinity } from 'lucide-react';
 import { TextDisplay } from '../components/TextDisplay';
 import { Keyboard } from '../components/Keyboard';
@@ -120,7 +120,7 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
                 >
                   <ToggleGroup
                     value={[timedDuration.toString()]}
-                    onValueChange={(v) => v.length > 0 && onDurationChange(parseInt(v[0]) as TimeDuration)}
+                    onValueChange={(v: string[]) => v.length > 0 && onDurationChange(parseInt(v[0]) as TimeDuration)}
                   >
                     <ToggleGroupItem value='15'>15s</ToggleGroupItem>
                     <ToggleGroupItem value='30'>30s</ToggleGroupItem>
@@ -131,7 +131,7 @@ export const SoloRacingScreen = memo(function SoloRacingScreen({
 
             <motion.div layout>
               {/* Mode toggle: Text vs Timed vs Endless */}
-              <ToggleGroup value={[soloModeType]} onValueChange={(v) => v.length > 0 && onModeChange(v[0] as SoloModeType)}>
+              <ToggleGroup value={[soloModeType]} onValueChange={(v: string[]) => v.length > 0 && onModeChange(v[0] as SoloModeType)}>
                 <ToggleGroupItem value='text' aria-label='Text mode'>
                   <FileText className='w-4 h-4' />
                 </ToggleGroupItem>

@@ -1,17 +1,15 @@
-import { Graphics } from 'pixi.js'
-
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
 
 /**
  * Draws a pixel art snake head at the specified position
- * @param g - PixiJS Graphics object
+ * @param ctx - CanvasRenderingContext2D
  * @param x - Center X position in pixels
  * @param y - Center Y position in pixels
  * @param cellSize - Size of each grid cell in pixels
  * @param direction - Direction the snake is facing
  */
 export function drawPixelSnakeHead(
-  g: Graphics,
+  ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   cellSize: number,
@@ -247,23 +245,19 @@ export function drawPixelSnakeHead(
   }
 
   // Head body (white/light gray)
-  g.fillStyle = 0xffffff
+  ctx.fillStyle = '#ffffff'
   headRects.forEach((rect) => {
-    g.rect(rect.x, rect.y, rect.width, rect.height)
-    g.fill()
+    ctx.fillRect(rect.x, rect.y, rect.width, rect.height)
   })
 
   // Eyes (black)
-  g.fillStyle = 0x000000
-  g.rect(eyePositions.x1, eyePositions.y1, pixelSize, pixelSize)
-  g.fill()
-  g.rect(eyePositions.x2, eyePositions.y2, pixelSize, pixelSize)
-  g.fill()
+  ctx.fillStyle = '#000000'
+  ctx.fillRect(eyePositions.x1, eyePositions.y1, pixelSize, pixelSize)
+  ctx.fillRect(eyePositions.x2, eyePositions.y2, pixelSize, pixelSize)
 
   // Tongue (red)
-  g.fillStyle = 0xff0000
+  ctx.fillStyle = '#ff0000'
   tonguePos.forEach((tongue) => {
-    g.rect(tongue.x, tongue.y, tongue.width, tongue.height)
-    g.fill()
+    ctx.fillRect(tongue.x, tongue.y, tongue.width, tongue.height)
   })
 }

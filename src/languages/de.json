@@ -14,7 +14,7 @@
   "games": {
     "hub": {
       "title": "Minispiele-Hub",
-      "subtitle": "Eine Sammlung klassischer Arcade- und Puzzlespiele, erstellt mit React, PixiJS und Tailwind CSS."
+      "subtitle": "Eine Sammlung klassischer Arcade- und Puzzlespiele"
     },
     "titles": {
       "snake": "Snake",

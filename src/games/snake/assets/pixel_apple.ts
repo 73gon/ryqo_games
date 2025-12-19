@@ -1,14 +1,12 @@
-import { Graphics } from 'pixi.js'
-
 /**
  * Draws a pixel art apple at the specified grid position
- * @param g - PixiJS Graphics object
+ * @param ctx - CanvasRenderingContext2D
  * @param x - Grid X position
  * @param y - Grid Y position
  * @param cellSize - Size of each grid cell in pixels
  */
 export function drawPixelApple(
-  g: Graphics,
+  ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   cellSize: number,
@@ -18,69 +16,62 @@ export function drawPixelApple(
   const pixelSize = cellSize / 8
 
   // Stem (brown/dark)
-  g.fillStyle = 0x8b4513
-  g.rect(
+  ctx.fillStyle = '#8b4513'
+  ctx.fillRect(
     baseX + pixelSize * 3.5,
     baseY + pixelSize * 1,
     pixelSize,
     pixelSize * 1.5,
   )
-  g.fill()
 
   // Leaf (green)
-  g.fillStyle = 0x228b22
-  g.rect(
+  ctx.fillStyle = '#228b22'
+  ctx.fillRect(
     baseX + pixelSize * 4.5,
     baseY + pixelSize * 0.5,
     pixelSize * 1.5,
     pixelSize,
   )
-  g.fill()
 
   // Apple body (red)
-  g.fillStyle = 0xff0000
+  ctx.fillStyle = '#ff0000'
 
   // Top row
-  g.rect(
+  ctx.fillRect(
     baseX + pixelSize * 2,
     baseY + pixelSize * 2.5,
     pixelSize * 4,
     pixelSize,
   )
-  g.fill()
 
   // Middle rows (wider)
-  g.rect(
+  ctx.fillRect(
     baseX + pixelSize * 1.5,
     baseY + pixelSize * 3.5,
     pixelSize * 5,
     pixelSize * 2,
   )
-  g.fill()
 
   // Bottom rows (narrowing)
-  g.rect(
+  ctx.fillRect(
     baseX + pixelSize * 2,
     baseY + pixelSize * 5.5,
     pixelSize * 4,
     pixelSize,
   )
-  g.fill()
-  g.rect(
+  ctx.fillRect(
     baseX + pixelSize * 2.5,
     baseY + pixelSize * 6.5,
     pixelSize * 3,
     pixelSize,
   )
-  g.fill()
 
   // Highlight (lighter red/pink)
-  g.fillStyle = 0xffaaaa
-  g.rect(
+  ctx.fillStyle = '#ffaaaa'
+  ctx.fillRect(
     baseX + pixelSize * 2,
     baseY + pixelSize * 3,
     pixelSize * 1.5,
     pixelSize * 1.5,
   )
-  g.fill()
 }

@@ -1,17 +1,15 @@
-import { Graphics } from 'pixi.js'
-
 type Direction = 'UP' | 'DOWN' | 'LEFT' | 'RIGHT'
 
 /**
  * Draws a pixel art snake tail at the specified position
- * @param g - PixiJS Graphics object
+ * @param ctx - CanvasRenderingContext2D
  * @param x - Center X position in pixels
  * @param y - Center Y position in pixels
  * @param cellSize - Size of each grid cell in pixels
  * @param direction - Direction the tail is pointing (direction it came from)
  */
 export function drawPixelSnakeTail(
-  g: Graphics,
+  ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   cellSize: number,
@@ -169,9 +167,8 @@ export function drawPixelSnakeTail(
   }
 
   // Draw tail (white)
-  g.fillStyle = 0xffffff
+  ctx.fillStyle = '#ffffff'
   tailRects.forEach((rect) => {
-    g.rect(rect.x, rect.y, rect.width, rect.height)
-    g.fill()
+    ctx.fillRect(rect.x, rect.y, rect.width, rect.height)
   })
 }

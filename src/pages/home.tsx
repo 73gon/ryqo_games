@@ -68,9 +68,7 @@ export function Home() {
       <div className='py-12 px-4'>
         <div className='mb-12 text-center'>
           <h1 className='text-4xl font-extrabold tracking-tight lg:text-5xl mb-4'>Mini-Games Hub</h1>
-          <p className='text-xl text-muted-foreground max-w-2xl mx-auto'>
-            A collection of classic arcade and puzzle games built with React, PixiJS, and Tailwind CSS.
-          </p>
+          <p className='text-xl text-muted-foreground max-w-2xl mx-auto'>A collection of classic arcade and puzzle games built.</p>
         </div>
 
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
@@ -81,7 +79,7 @@ export function Home() {
               className='block transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 rounded-xl'
             >
               <SpotlightCard className='h-full cursor-pointer p-0 rounded-xl'>
-                <Card className='h-full bg-transparent border-0 shadow-none'>
+                <Card className='h-full bg-transparent border-0 shadow-none ring-0'>
                   <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                     <CardTitle className='text-xl font-bold'>{game.title}</CardTitle>
                     <game.icon className='h-6 w-6 text-muted-foreground' />

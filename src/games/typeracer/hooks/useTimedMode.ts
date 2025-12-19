@@ -208,7 +208,7 @@ export function useTimedMode({ duration, withPunctuation, enabled, onComplete }:
   // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!enabledRef.current || !isActiveRef.current || timeRemainingRef.current <= 0) return;
+      if (!enabledRef.current || timeRemainingRef.current <= 0) return;
 
       if (e.key === 'Backspace') {
         e.preventDefault();

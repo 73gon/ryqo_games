@@ -121,14 +121,14 @@ export function SnakeGame({ embedded = false }: { embedded?: boolean }) {
               <label className='text-sm font-medium'>{t('games.snake.apples')}</label>
               <span className='text-sm text-muted-foreground'>{appleCount}</span>
             </div>
-            <Slider value={[appleCount]} onValueChange={(v) => setAppleCount(v[0])} min={1} max={10} step={1} disabled={isRunning} />
+            <Slider value={appleCount} onValueChange={(v: number | readonly number[]) => setAppleCount(Array.isArray(v) ? v[0] : v)} min={1} max={10} step={1} disabled={isRunning} />
           </div>
           <div className='space-y-2'>
             <div className='flex justify-between'>
               <label className='text-sm font-medium'>{t('games.snake.speed')}</label>
               <span className='text-sm text-muted-foreground'>{speed}</span>
             </div>
-            <Slider value={[speed]} onValueChange={(v) => setSpeed(v[0])} min={1} max={10} step={1} disabled={isRunning} />
+            <Slider value={speed} onValueChange={(v: number | readonly number[]) => setSpeed(Array.isArray(v) ? v[0] : v)} min={1} max={10} step={1} disabled={isRunning} />
           </div>
         </div>
 
@@ -213,7 +213,7 @@ export function SnakeGame({ embedded = false }: { embedded?: boolean }) {
           </div>
         </div>
       )}
-      <div className='flex-1 max-w-[600px]' />
+      <div className='flex-1 max-w-150' />
     </div>
   );
 
@@ -267,7 +267,6 @@ export function SnakeGame({ embedded = false }: { embedded?: boolean }) {
   if (embedded) {
     return (
       <div className='flex flex-col items-center gap-4'>
-        <h3 className='text-xl font-bold'>PixiJS</h3>
         {controls}
         {content}
       </div>
