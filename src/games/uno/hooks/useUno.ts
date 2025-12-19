@@ -11,6 +11,49 @@ export const useUno = () => {
   const [isLoading, setIsLoading] = useState(false);
   const subscriptionRef = useRef<(() => void) | null>(null);
 
+  const normalizePlayers = (value: unknown, fallback: Player[] = []): Player[] => {
+    if (Array.isArray(value)) {
+      return (value as Player[]).map((player) => ({
+        ...player,
+        hand: Array.isArray(player.hand) ? player.hand : [],
+      }));
+    }
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed)) {
+          return (parsed as Player[]).map((player) => ({
+            ...player,
+            hand: Array.isArray(player.hand) ? player.hand : [],
+          }));
+        }
+      } catch {
+        return fallback;
+      }
+    }
+    return fallback;
+  };
+
+  const normalizeGameState = (value: unknown, roomId: string, fallback: GameState | null): GameState | null => {
+    if (!value) return fallback;
+    const parsed = typeof value === 'string' ? (() => {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return null;
+      }
+    })() : value;
+    if (!parsed || typeof parsed !== 'object') return fallback;
+    const state = parsed as GameState;
+    return {
+      ...state,
+      roomId: state.roomId ?? roomId,
+      players: normalizePlayers(state.players, fallback?.players ?? []),
+      deck: Array.isArray(state.deck) ? state.deck : [],
+      discardPile: Array.isArray(state.discardPile) ? state.discardPile : [],
+    };
+  };
+
   // Initialize Player ID
   useEffect(() => {
     let storedId = localStorage.getItem('uno_player_id');
@@ -83,7 +126,7 @@ export const useUno = () => {
         if (data.status === 'waiting') {
           setGameState({
             roomId: code,
-            players: data.players,
+            players: normalizePlayers(data.players),
             deck: [],
             discardPile: [],
             currentTurnIndex: 0,
@@ -93,7 +136,12 @@ export const useUno = () => {
             version: 0,
           });
         } else {
-          setGameState(data.gameState);
+          const nextState = normalizeGameState(data.gameState, code, null);
+          if (nextState) {
+            setGameState(nextState);
+          } else {
+            toast.error('Room state is unavailable.');
+          }
         }
       }
     } else {
@@ -108,27 +156,49 @@ export const useUno = () => {
     subscriptionRef.current = Supabase.subscribeToRoom(code, (payload) => {
       // payload is the Row from uno_rooms table
       // We care about 'game_state' and 'players' and 'status'
-      if (payload.status === 'waiting') {
-        setGameState((prev) =>
-          prev
-            ? {
-                ...prev,
-                players: payload.players,
-                status: 'waiting',
-              }
-            : null,
-        );
-      } else {
-        setGameState(payload.game_state);
-      }
+      if (!payload) return;
+      setGameState((prev) => {
+        const status = payload.status ?? prev?.status;
+        const nextState = normalizeGameState(payload.game_state, code, prev);
+
+        if (status === 'waiting' || (!status && prev?.status === 'waiting')) {
+          const players = normalizePlayers(payload.players, prev?.players ?? []);
+          if (!prev) {
+            return {
+              roomId: payload.id ?? code,
+              players,
+              deck: [],
+              discardPile: [],
+              currentTurnIndex: 0,
+              direction: 1,
+              status: 'waiting',
+              activeColor: 'red',
+              version: 0,
+            };
+          }
+          return {
+            ...prev,
+            players,
+            status: 'waiting',
+          };
+        }
+
+        if (status === 'playing' || status === 'finished') {
+          return nextState ?? prev;
+        }
+
+        return nextState ?? prev;
+      });
     });
   };
 
   const startGame = async () => {
     if (!gameState || !gameState.players) return;
+    if (gameState.players.length < 2) return toast.error('Need at least 2 players to start');
     setIsLoading(true);
     try {
       const newState = logicStartGame(gameState.roomId, gameState.players);
+      setGameState(newState);
       await Supabase.updateGameState(gameState.roomId, newState);
     } catch (e) {
       console.error(e);
@@ -151,7 +221,7 @@ export const useUno = () => {
       // but here we updated local state.
       // Ideally we'd fetch fresh state on error.
       const data = await Supabase.getRoom(gameState.roomId);
-      if (data) setGameState(data.gameState);
+      if (data) setGameState(normalizeGameState(data.gameState, gameState.roomId, gameState) ?? gameState);
     }
   };
 
