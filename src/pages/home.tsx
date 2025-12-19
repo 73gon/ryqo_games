@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { Gamepad2, Grid3x3, Ghost, Hash, Bomb, RectangleHorizontal, LayoutTemplate, Keyboard } from 'lucide-react';
+import { Gamepad2, Grid3x3, Ghost, Hash, Bomb, RectangleHorizontal, LayoutTemplate, Keyboard, Layers } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import SpotlightCard from '@/components/spotlight-card';
 
@@ -60,6 +60,13 @@ export function Home() {
       href: '/games/typeracer',
       icon: Keyboard,
       type: 'Skill',
+    },
+    {
+      title: 'Uno',
+      description: 'Classic multiplayer card game. Match colors and numbers to win.',
+      href: '/games/uno',
+      icon: Layers,
+      type: 'Multiplayer',
     },
   ];
 

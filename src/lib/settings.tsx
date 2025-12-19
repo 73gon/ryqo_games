@@ -80,12 +80,12 @@ export function getPageWidthClass(width: AppSettings['pageWidth']) {
     case 'narrow':
       return 'max-w-3xl';
     case 'medium':
-      return 'max-w-5xl';
+      return 'max-w-6xl';
     case 'wide':
       return 'max-w-7xl';
     case 'full':
       return 'max-w-full';
     default:
-      return 'max-w-5xl';
+      return 'max-w-6xl';
   }
 }

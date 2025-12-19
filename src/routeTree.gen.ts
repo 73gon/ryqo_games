@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GamesUnoRouteImport } from './routes/games/uno'
 import { Route as GamesTyperacerRouteImport } from './routes/games/typeracer'
 import { Route as GamesTetrisRouteImport } from './routes/games/tetris'
 import { Route as GamesSnakeRouteImport } from './routes/games/snake'
@@ -31,6 +32,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GamesUnoRoute = GamesUnoRouteImport.update({
+  id: '/games/uno',
+  path: '/games/uno',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GamesTyperacerRoute = GamesTyperacerRouteImport.update({
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/games/snake': typeof GamesSnakeRoute
   '/games/tetris': typeof GamesTetrisRoute
   '/games/typeracer': typeof GamesTyperacerRouteWithChildren
+  '/games/uno': typeof GamesUnoRoute
   '/games/typeracer/multiplayer': typeof GamesTyperacerMultiplayerRoute
   '/games/typeracer/solo': typeof GamesTyperacerSoloRoute
   '/games/typeracer/': typeof GamesTyperacerIndexRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/games/pong': typeof GamesPongRoute
   '/games/snake': typeof GamesSnakeRoute
   '/games/tetris': typeof GamesTetrisRoute
+  '/games/uno': typeof GamesUnoRoute
   '/games/typeracer/multiplayer': typeof GamesTyperacerMultiplayerRoute
   '/games/typeracer/solo': typeof GamesTyperacerSoloRoute
   '/games/typeracer': typeof GamesTyperacerIndexRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/games/snake': typeof GamesSnakeRoute
   '/games/tetris': typeof GamesTetrisRoute
   '/games/typeracer': typeof GamesTyperacerRouteWithChildren
+  '/games/uno': typeof GamesUnoRoute
   '/games/typeracer/multiplayer': typeof GamesTyperacerMultiplayerRoute
   '/games/typeracer/solo': typeof GamesTyperacerSoloRoute
   '/games/typeracer/': typeof GamesTyperacerIndexRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/games/snake'
     | '/games/tetris'
     | '/games/typeracer'
+    | '/games/uno'
     | '/games/typeracer/multiplayer'
     | '/games/typeracer/solo'
     | '/games/typeracer/'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/games/pong'
     | '/games/snake'
     | '/games/tetris'
+    | '/games/uno'
     | '/games/typeracer/multiplayer'
     | '/games/typeracer/solo'
     | '/games/typeracer'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/games/snake'
     | '/games/tetris'
     | '/games/typeracer'
+    | '/games/uno'
     | '/games/typeracer/multiplayer'
     | '/games/typeracer/solo'
     | '/games/typeracer/'
@@ -193,6 +205,7 @@ export interface RootRouteChildren {
   GamesSnakeRoute: typeof GamesSnakeRoute
   GamesTetrisRoute: typeof GamesTetrisRoute
   GamesTyperacerRoute: typeof GamesTyperacerRouteWithChildren
+  GamesUnoRoute: typeof GamesUnoRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -209,6 +222,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/games/uno': {
+      id: '/games/uno'
+      path: '/games/uno'
+      fullPath: '/games/uno'
+      preLoaderRoute: typeof GamesUnoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/games/typeracer': {
@@ -318,6 +338,7 @@ const rootRouteChildren: RootRouteChildren = {
   GamesSnakeRoute: GamesSnakeRoute,
   GamesTetrisRoute: GamesTetrisRoute,
   GamesTyperacerRoute: GamesTyperacerRouteWithChildren,
+  GamesUnoRoute: GamesUnoRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
