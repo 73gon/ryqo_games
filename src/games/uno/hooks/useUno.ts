@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { type GameState, type Player, type Card, type Color } from '../core/types';
-import { createDeck, shuffle, playCard as logicPlayCard, drawCard as logicDrawCard, startGame as logicStartGame } from '../core/gameLogic';
+import { playCard as logicPlayCard, drawCard as logicDrawCard, startGame as logicStartGame } from '../core/gameLogic';
 import * as Supabase from '../supabase';
 import { toast } from 'sonner';
 
@@ -8,7 +8,6 @@ export const useUno = () => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [playerId, setPlayerId] = useState<string>('');
   const [playerName, setPlayerName] = useState<string>('');
-  const [roomId, setRoomId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const subscriptionRef = useRef<(() => void) | null>(null);
 
@@ -31,13 +30,6 @@ export const useUno = () => {
     localStorage.setItem('uno_player_name', name);
   };
 
-  const handleUpdate = useCallback((newGameState: GameState) => {
-    // Optimistic updates might clash, so we always trust the server state eventually
-    // But for animations, we might want to diff?
-    // For now, simple replacement.
-    setGameState(newGameState);
-  }, []);
-
   const createGame = async () => {
     if (!playerName) return toast.error('Please enter your name');
     setIsLoading(true);
@@ -51,7 +43,6 @@ export const useUno = () => {
 
     const newRoomId = await Supabase.createRoom(host);
     if (newRoomId) {
-      setRoomId(newRoomId);
       // Initial state for lobby
       setGameState({
         roomId: newRoomId,
@@ -84,7 +75,6 @@ export const useUno = () => {
 
     const success = await Supabase.joinRoom(code, player);
     if (success) {
-      setRoomId(code);
       connectToRoom(code);
       // Fetch initial state immediately
       const data = await Supabase.getRoom(code);
@@ -178,7 +168,6 @@ export const useUno = () => {
 
   const leaveGame = () => {
     if (subscriptionRef.current) subscriptionRef.current();
-    setRoomId(null);
     setGameState(null);
     // Ideally remove player from DB if lobby
   };

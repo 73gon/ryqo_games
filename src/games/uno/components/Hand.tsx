@@ -35,7 +35,7 @@ export const Hand = ({ cards, isMyTurn, onPlayCard, className }: HandProps) => {
           // X Overlap
           // Determine spacing based on number of cards to fit screen
           // Base spacing: 30px?
-          const xSpacing = Math.min(40, 300 / total); // crude responsive fit
+          //const xSpacing = Math.min(40, 300 / total); // crude responsive fit
 
           return (
             <motion.div

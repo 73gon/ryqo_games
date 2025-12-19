@@ -20,8 +20,6 @@ const colorMap = {
   black: 'bg-slate-900 text-slate-900',
 };
 
-const textShadow = 'text-shadow-sm'; // Custom utility if needed, or drop-shadow
-
 export const Card = ({ card, onClick, isHidden, isPlayable, className, style }: CardProps) => {
   const baseColor = colorMap[card.color] || colorMap.black;
   const bgColor = baseColor.split(' ')[0];
